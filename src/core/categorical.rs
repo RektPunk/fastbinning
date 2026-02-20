@@ -25,37 +25,60 @@ impl CategoricalBinning {
         Self { max_bins }
     }
 
-    pub fn execute_fit(&self, x: Vec<String>, y: Vec<i32>) -> Vec<CatBin> {
-        let stats = self.prebinning(x, y);
+    pub fn execute_fit(&self, x: &[i32], y: &[i32], category_names: Vec<String>) -> Vec<CatBin> {
+        let stats = self.prebinning(x, y, category_names);
 
         let split_indices = self.split(&stats);
         self.reconstruct_bins(&stats, split_indices)
     }
 
-    fn prebinning(&self, x: Vec<String>, y: Vec<i32>) -> PreCatBinStats {
-        let mut map: HashMap<String, (f64, f64)> = HashMap::new();
-        let (mut missing_pos, mut missing_neg) = (0.0, 0.0);
+    fn prebinning(&self, x: &[i32], y: &[i32], category_names: Vec<String>) -> PreCatBinStats {
+        let (final_map, m_pos, m_neg) = x
+            .par_iter()
+            .zip(y.par_iter())
+            .fold(
+                || (HashMap::<i32, (f64, f64)>::new(), 0.0, 0.0),
+                |(mut map, mut mp, mut mn), (&val, &target)| {
+                    if val == -1 {
+                        // pandas factorize NaN
+                        if target == 1 {
+                            mp += 1.0;
+                        } else {
+                            mn += 1.0;
+                        }
+                    } else {
+                        let entry = map.entry(val).or_insert((0.0, 0.0));
+                        if target == 1 {
+                            entry.0 += 1.0;
+                        } else {
+                            entry.1 += 1.0;
+                        }
+                    }
+                    (map, mp, mn)
+                },
+            )
+            .reduce(
+                || (HashMap::new(), 0.0, 0.0),
+                |(mut map1, mp1, mn1), (map2, mp2, mn2)| {
+                    for (k, v) in map2 {
+                        let e = map1.entry(k).or_insert((0.0, 0.0));
+                        e.0 += v.0;
+                        e.1 += v.1;
+                    }
+                    (map1, mp1 + mp2, mn1 + mn2)
+                },
+            );
 
-        for (val, &target) in x.iter().zip(y.iter()) {
-            let is_pos = target == 1;
-            if val.is_empty() || val == "nan" || val == "null" {
-                if is_pos {
-                    missing_pos += 1.0;
-                } else {
-                    missing_neg += 1.0;
-                }
-                continue;
-            }
-            let entry = map.entry(val.clone()).or_insert((0.0, 0.0));
-            if is_pos {
-                entry.0 += 1.0;
-            } else {
-                entry.1 += 1.0;
-            }
-        }
-
-        let mut map_stats: Vec<(String, f64, f64)> =
-            map.into_iter().map(|(name, (p, n))| (name, p, n)).collect();
+        let mut map_stats: Vec<(String, f64, f64)> = final_map
+            .into_iter()
+            .map(|(id, (p, n))| {
+                let name = category_names
+                    .get(id as usize)
+                    .map(|s| s.clone())
+                    .unwrap_or_else(|| id.to_string());
+                (name, p, n)
+            })
+            .collect();
 
         map_stats.par_sort_by(|a, b| {
             let br_a = a.1 / (a.1 + a.2).max(1.0);
@@ -65,14 +88,15 @@ impl CategoricalBinning {
 
         let mut pos_counts = Vec::with_capacity(map_stats.len());
         let mut neg_counts = Vec::with_capacity(map_stats.len());
-        let mut names = Vec::with_capacity(map_stats.len());
+        let mut final_names = Vec::with_capacity(map_stats.len());
+
         for (name, p, n) in map_stats {
-            names.push(name);
+            final_names.push(name);
             pos_counts.push(p);
             neg_counts.push(n);
         }
 
-        PreCatBinStats::new(&pos_counts, &neg_counts, names, missing_pos, missing_neg)
+        PreCatBinStats::new(&pos_counts, &neg_counts, final_names, m_pos, m_neg)
     }
 
     fn split(&self, stats: &PreCatBinStats) -> Vec<usize> {

@@ -81,8 +81,15 @@ impl CategoricalBinning {
         Self::new(max_bins)
     }
 
-    pub fn fit(&self, x: Vec<String>, y: Vec<i32>) -> PyResult<Vec<PyCatBin>> {
-        let results = self.execute_fit(x, y);
+    pub fn fit(
+        &self,
+        x: PyReadonlyArray1<i32>,
+        y: PyReadonlyArray1<i32>,
+        category_names: Vec<String>,
+    ) -> PyResult<Vec<PyCatBin>> {
+        let x_slice = x.as_slice().expect("x array must be contiguous");
+        let y_slice = y.as_slice().expect("y array must be contiguous");
+        let results = self.execute_fit(x_slice, y_slice, category_names);
         let py_results = results
             .into_iter()
             .map(|b| PyCatBin {
