@@ -84,7 +84,7 @@ impl CategoricalBinning {
             })
             .collect();
 
-        map_stats.par_sort_by(|a, b| {
+        map_stats.sort_by(|a, b| {
             let br_a = if a.1 + a.2 > 0 {
                 a.1 as f64 / (a.1 + a.2) as f64
             } else {

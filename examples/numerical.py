@@ -28,7 +28,7 @@ x_num[nan_indices] = np.nan
 # min_bin_pct: Minimum sample size required for each bin (10%)
 numerical_binning = fastbinning.NumericalBinning(
     max_bins=5,
-    initial_bins_count=500,
+    initial_bins_count=200,
     min_bin_pct=0.1,
 )
 
