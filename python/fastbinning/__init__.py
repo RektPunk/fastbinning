@@ -1,5 +1,3 @@
-from .fastbinning import *
+from .fastbinning import CategoricalBinning, NumericalBinning, PyCatBin, PyNumBin
 
-__doc__ = fastbinning.__doc__
-if hasattr(fastbinning, "__all__"):
-    __all__ = fastbinning.__all__
+__all__ = ["NumericalBinning", "CategoricalBinning", "PyNumBin", "PyCatBin"]

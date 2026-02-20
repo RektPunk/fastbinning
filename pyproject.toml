@@ -27,4 +27,5 @@ dev = [
 
 [tool.maturin]
 python-source = "python"
-module-name = "fastbinning.fastbinning"
+module-name = "fastbinning"
+include = ["python/fastbinning/*.pyi", "python/fastbinning/py.typed"]

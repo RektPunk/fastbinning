@@ -85,8 +85,16 @@ impl CategoricalBinning {
             .collect();
 
         map_stats.par_sort_by(|a, b| {
-            let br_a = (a.1 as f64 / (a.1 + a.2) as f64).max(1.0);
-            let br_b = (b.1 as f64 / (b.1 + b.2) as f64).max(1.0);
+            let br_a = if a.1 + a.2 > 0 {
+                a.1 as f64 / (a.1 + a.2) as f64
+            } else {
+                0.0
+            };
+            let br_b = if b.1 + b.2 > 0 {
+                b.1 as f64 / (b.1 + b.2) as f64
+            } else {
+                0.0
+            };
             br_a.partial_cmp(&br_b).unwrap_or(std::cmp::Ordering::Equal)
         });
 
