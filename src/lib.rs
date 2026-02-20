@@ -1,44 +1,109 @@
-pub mod models;
-pub mod prepare;
+use numpy::PyReadonlyArray1;
+use pyo3::prelude::*;
 
-use crate::prepare::initial_bins_optimized;
+mod core;
+use crate::core::categorical::CategoricalBinning;
+use crate::core::numerical::NumericalBinning;
 
-#[cfg(test)] // 테스트할 때만 컴파일되도록 설정
-mod tests {
-    #[test]
-    fn test_initial_bins() {
-        use super::*;
-        let x = vec![
-            1.0,
-            2.0,
-            3.0,
-            4.0,
-            5.0,
-            6.0,
-            7.0,
-            8.0,
-            9.0,
-            10.0,
-            f64::NAN,
-            f64::NAN,
-        ];
-        let y = vec![0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1];
+#[pyclass(from_py_object)]
+#[derive(Clone)]
+pub struct PyNumBin {
+    #[pyo3(get)]
+    pub bin_id: usize,
+    #[pyo3(get)]
+    pub range: (f64, f64),
+    #[pyo3(get)]
+    pub pos: f64,
+    #[pyo3(get)]
+    pub neg: f64,
+    #[pyo3(get)]
+    pub woe: f64,
+    #[pyo3(get)]
+    pub iv: f64,
+    #[pyo3(get)]
+    pub is_missing: bool,
+}
 
-        let (bins, missing) = initial_bins_optimized(&x, &y, 5);
+#[pyclass(from_py_object)]
+#[derive(Clone)]
+pub struct PyCatBin {
+    #[pyo3(get)]
+    pub bin_id: usize,
+    #[pyo3(get)]
+    pub categories: Vec<String>,
+    #[pyo3(get)]
+    pub pos: f64,
+    #[pyo3(get)]
+    pub neg: f64,
+    #[pyo3(get)]
+    pub woe: f64,
+    #[pyo3(get)]
+    pub iv: f64,
+    #[pyo3(get)]
+    pub is_missing: bool,
+}
 
-        assert!(bins.len() <= 5);
-
-        assert!(missing.is_some());
-        let m_bin = missing.unwrap();
-        assert_eq!(m_bin.pos, 1.0);
-        assert_eq!(m_bin.neg, 1.0);
-
-        println!("Bins count: {}", bins.len());
-        for (i, b) in bins.iter().enumerate() {
-            println!(
-                "Bin {}: [{} - {}], pos: {}, neg: {}",
-                i, b.left, b.right, b.pos, b.neg
-            );
-        }
+#[pymethods]
+impl NumericalBinning {
+    #[new]
+    pub fn pynew(max_bins: usize, initial_bins_count: usize) -> Self {
+        Self::new(max_bins, initial_bins_count)
     }
+
+    pub fn fit(
+        &self,
+        x: PyReadonlyArray1<f64>,
+        y: PyReadonlyArray1<i32>,
+    ) -> PyResult<Vec<PyNumBin>> {
+        let x_view = x.as_array();
+        let y_view = y.as_array();
+        let results = self.execute_fit(x_view, y_view);
+        let py_results = results
+            .into_iter()
+            .map(|b| PyNumBin {
+                bin_id: b.bin_id,
+                range: b.range,
+                pos: b.pos,
+                neg: b.neg,
+                woe: b.woe,
+                iv: b.iv,
+                is_missing: b.is_missing,
+            })
+            .collect();
+        Ok(py_results)
+    }
+}
+
+#[pymethods]
+impl CategoricalBinning {
+    #[new]
+    pub fn pynew(max_bins: usize) -> Self {
+        Self::new(max_bins)
+    }
+
+    pub fn fit(&self, x: Vec<String>, y: Vec<i32>) -> PyResult<Vec<PyCatBin>> {
+        let results = self.execute_fit(x, y);
+        let py_results = results
+            .into_iter()
+            .map(|b| PyCatBin {
+                bin_id: b.bin_id,
+                categories: b.categories,
+                pos: b.pos,
+                neg: b.neg,
+                woe: b.woe,
+                iv: b.iv,
+                is_missing: b.is_missing,
+            })
+            .collect();
+        Ok(py_results)
+    }
+}
+
+#[pymodule]
+fn fastbinning(m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add_class::<CategoricalBinning>()?;
+    m.add_class::<NumericalBinning>()?;
+    m.add_class::<PyCatBin>()?;
+    m.add_class::<PyNumBin>()?;
+    Ok(())
 }
