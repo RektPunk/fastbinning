@@ -16,7 +16,7 @@ x_ser.iloc[nan_indices] = np.nan
 codes, uniques = pd.factorize(x_ser, sort=True)
 uniques_list = uniques.astype(str).tolist()
 
-categorical_binning = fastbinning.CategoricalBinning(max_bins=3, min_bin_size=0.1)
+categorical_binning = fastbinning.CategoricalBinning(max_bins=3, min_bin_pct=0.1)
 
 start_time = time.perf_counter()
 categorical_bins = categorical_binning.fit(codes.astype(np.int32), y, uniques_list)
@@ -24,7 +24,9 @@ end_time = time.perf_counter()
 
 print(f"Execution Time: {(end_time - start_time) * 1000:.2f} ms")
 print("-" * 100)
-print(f"{'ID':<3} | {'Categories':<25} | {'Pos':<10} | {'Neg':<10} |{'WoE':<8} | {'IV':<8} | {'Missing'}")
+print(
+    f"{'ID':<3} | {'Categories':<25} | {'Pos':<10} | {'Neg':<10} |{'WoE':<8} | {'IV':<8} | {'Missing'}"
+)
 print("-" * 100)
 
 total_iv = 0

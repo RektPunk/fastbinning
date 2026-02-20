@@ -10,7 +10,11 @@ pos_indices = np.where(y == 1)[0]
 nan_indices = np.random.choice(pos_indices, 5000, replace=False)
 
 x[nan_indices] = np.nan
-numerical_binning = fastbinning.NumericalBinning(max_bins=5, initial_bins_count=500, min_bin_size=0.1)
+numerical_binning = fastbinning.NumericalBinning(
+    max_bins=5,
+    initial_bins_count=500,
+    min_bin_pct=0.1,
+)
 
 print("--- 10,000,000 samples Binning Start ---")
 start_time = time.perf_counter()
@@ -19,7 +23,9 @@ end_time = time.perf_counter()
 
 print(f"Execution Time: {(end_time - start_time) * 1000:.2f} ms")
 print("-" * 100)
-print(f"{'ID':<3} | {'Range':<25} | {'Pos':<10} | {'Neg':<10} |{'WoE':<8} | {'IV':<8} | {'Missing'}")
+print(
+    f"{'ID':<3} | {'Range':<25} | {'Pos':<10} | {'Neg':<10} |{'WoE':<8} | {'IV':<8} | {'Missing'}"
+)
 print("-" * 100)
 
 total_iv = 0

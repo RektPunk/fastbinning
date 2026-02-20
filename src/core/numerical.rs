@@ -24,15 +24,15 @@ pub struct NumBin {
 pub struct NumericalBinning {
     pub max_bins: usize,
     pub initial_bins_count: usize,
-    pub min_bin_size: f64,
+    pub min_bin_pct: f64,
 }
 
 impl NumericalBinning {
-    pub fn new(max_bins: usize, initial_bins_count: usize, min_bin_size: f64) -> Self {
+    pub fn new(max_bins: usize, initial_bins_count: usize, min_bin_pct: f64) -> Self {
         Self {
             max_bins,
             initial_bins_count,
-            min_bin_size,
+            min_bin_pct,
         }
     }
 
@@ -100,7 +100,7 @@ impl NumericalBinning {
         let n = stats.edges.len();
         let k_max = self.max_bins.min(n);
         let total_samples = stats.total_pos + stats.total_neg;
-        let min_samples = (total_samples as f64 * self.min_bin_size) as i32;
+        let min_samples = (total_samples as f64 * self.min_bin_pct) as i32;
 
         let mut dp = Array2::<f64>::from_elem((k_max + 1, n), f64::NEG_INFINITY);
         let mut last_woe = Array2::<f64>::from_elem((k_max + 1, n), 0.0);

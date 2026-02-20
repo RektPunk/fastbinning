@@ -19,7 +19,7 @@ In financial risk modeling, **Weight of Evidence (WoE)** and **Information Value
 
 * **Monotonicity Guaranteed**: In credit scoring, features like 'Utilization Rate' or 'Age' must have a monotonic relationship with default risk to be explainable and compliant.
 * **Built for Big Data**: While traditional tools struggle with millions of rows, `fastbinning` handles 10M+ records in milliseconds.
-* **Robustness**: Prevents overfitting by enforcing minimum sample constraints (`min_bin_size`), ensuring each bin is statistically significant.
+* **Robustness**: Prevents overfitting by enforcing minimum sample constraints (`min_bin_pct`), ensuring each bin is statistically significant.
 
 # Installation
 Install using pip:

@@ -18,14 +18,14 @@ pub struct CatBin {
 #[pyclass]
 pub struct CategoricalBinning {
     pub max_bins: usize,
-    pub min_bin_size: f64,
+    pub min_bin_pct: f64,
 }
 
 impl CategoricalBinning {
-    pub fn new(max_bins: usize, min_bin_size: f64) -> Self {
+    pub fn new(max_bins: usize, min_bin_pct: f64) -> Self {
         Self {
             max_bins,
-            min_bin_size,
+            min_bin_pct,
         }
     }
 
@@ -107,7 +107,7 @@ impl CategoricalBinning {
         let n = stats.names.len();
         let k_max = self.max_bins.min(n);
         let total_samples = stats.total_pos + stats.total_neg;
-        let min_samples = (total_samples as f64 * self.min_bin_size) as i32;
+        let min_samples = (total_samples as f64 * self.min_bin_pct) as i32;
 
         let mut dp = Array2::<f64>::from_elem((k_max + 1, n), f64::NEG_INFINITY);
         let mut best_split = Array2::<usize>::from_elem((k_max + 1, n), 0);

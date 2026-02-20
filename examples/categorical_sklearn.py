@@ -6,7 +6,9 @@ import pandas as pd
 from sklearn.preprocessing import OrdinalEncoder
 
 enc = OrdinalEncoder(
-    handle_unknown="use_encoded_value", unknown_value=-1, encoded_missing_value=-1,
+    handle_unknown="use_encoded_value",
+    unknown_value=-1,
+    encoded_missing_value=-1,
 )
 
 n_samples = 10_000_000
@@ -24,14 +26,16 @@ codes = enc.fit_transform(x_reshaped).astype(np.int32).flatten()
 uniques_list = enc.categories_[0].astype(str).tolist()
 uniques_list = [c for c in uniques_list if c not in ["nan", "None", "NoneType"]]
 
-categorical_binning = fastbinning.CategoricalBinning(max_bins=3, min_bin_size=0.1)
+categorical_binning = fastbinning.CategoricalBinning(max_bins=3, min_bin_pct=0.1)
 
 start_time = time.perf_counter()
 categorical_bins = categorical_binning.fit(codes.astype(np.int32), y, uniques_list)
 end_time = time.perf_counter()
 
 print("-" * 100)
-print(f"{'ID':<3} | {'Categories':<25} | {'POS':<10} | {'NEG':<10} |{'WoE':<8} | {'IV':<8} | {'Missing'}")
+print(
+    f"{'ID':<3} | {'Categories':<25} | {'POS':<10} | {'NEG':<10} |{'WoE':<8} | {'IV':<8} | {'Missing'}"
+)
 print("-" * 100)
 
 total_iv = 0
