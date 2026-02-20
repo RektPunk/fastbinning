@@ -6,7 +6,7 @@ import pandas as pd
 from sklearn.preprocessing import OrdinalEncoder
 
 enc = OrdinalEncoder(
-    handle_unknown="use_encoded_value", unknown_value=-1, encoded_missing_value=-1
+    handle_unknown="use_encoded_value", unknown_value=-1, encoded_missing_value=-1,
 )
 
 n_samples = 10_000_000
@@ -24,23 +24,23 @@ codes = enc.fit_transform(x_reshaped).astype(np.int32).flatten()
 uniques_list = enc.categories_[0].astype(str).tolist()
 uniques_list = [c for c in uniques_list if c not in ["nan", "None", "NoneType"]]
 
-categorical_binning = fastbinning.CategoricalBinning(max_bins=3)
+categorical_binning = fastbinning.CategoricalBinning(max_bins=3, min_bin_size=0.1)
 
 start_time = time.perf_counter()
 categorical_bins = categorical_binning.fit(codes.astype(np.int32), y, uniques_list)
 end_time = time.perf_counter()
 
-print(f"Execution Time: {(end_time - start_time) * 1000:.2f} ms")
-print("-" * 70)
-print(f"{'Bin ID':<8} | {'Categories':<20} | {'WoE':<8} | {'IV':<8} | {'Is Missing'}")
-print("-" * 70)
+print("-" * 100)
+print(f"{'ID':<3} | {'Categories':<25} | {'POS':<10} | {'NEG':<10} |{'WoE':<8} | {'IV':<8} | {'Missing'}")
+print("-" * 100)
 
 total_iv = 0
 for b in categorical_bins:
-    cat_str = ", ".join(b.categories)
+    raw_cat = ", ".join(b.categories)
+    cat_str = (raw_cat[:20] + "...") if len(raw_cat) > 20 else raw_cat
     print(
-        f"{b.bin_id:<8} | {cat_str:<20} | {b.woe:>8.4f} | {b.iv:>8.4f} | {b.is_missing}"
+        f"{b.bin_id:<3} | {cat_str:<25} | {b.pos:<10} | {b.neg:<10} | {b.woe:>8.4f} | {b.iv:>8.4f} | {b.is_missing}"
     )
     total_iv += b.iv
-print("-" * 70)
+print("-" * 100)
 print(f"Total IV: {total_iv:.4f}")

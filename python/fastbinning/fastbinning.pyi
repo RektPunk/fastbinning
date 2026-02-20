@@ -1,0 +1,69 @@
+from typing import List, Tuple
+import numpy as np
+from numpy.typing import NDArray
+
+class PyNumBin:
+    """Result container for a single numerical bin."""
+
+    bin_id: int
+    range: Tuple[float, float]
+    pos: int
+    neg: int
+    woe: float
+    iv: float
+    is_missing: bool
+
+class PyCatBin:
+    """Result container for a single categorical bin."""
+
+    bin_id: int
+    categories: List[str]
+    pos: int
+    neg: int
+    woe: float
+    iv: float
+    is_missing: bool
+
+class NumericalBinning:
+    """High-performance numerical binning using Dynamic Programming
+    with Monotonic WoE constraint."""
+    def __init__(self, max_bins: int, initial_bins_count: int = 100):
+        """Args:
+        max_bins: Maximum number of bins to create.
+        initial_bins_count: Number of pre-bins for initial data compression.
+        """
+        ...
+
+    def fit(self, x: NDArray[np.float64], y: NDArray[np.int32]) -> List[PyNumBin]:
+        """Fits the binning model to numerical data.
+
+        Args:
+            x: 1D NumPy array of numerical features (supports NaNs).
+            y: 1D NumPy array of binary targets (0 or 1).
+        Returns:
+            A list of PyNumBin objects representing the optimal bins.
+        """
+        ...
+
+class CategoricalBinning:
+    """High-performance categorical binning with Monotonic WoE constraint."""
+    def __init__(self, max_bins: int):
+        """Args:
+        max_bins: Maximum number of bins to create.
+        """
+        ...
+
+    def fit(
+        self, x: NDArray[np.int32], y: NDArray[np.int32], uniques: List[str]
+    ) -> List[PyCatBin]:
+        """Fits the binning model to categorical data.
+
+        Args:
+            x: 1D NumPy array of encoded category indices.
+            y: 1D NumPy array of binary targets (0 or 1).
+            uniques: Original string names of the categories corresponding to indices in x.
+
+        Returns:
+            A list of PyCatBin objects.
+        """
+        ...

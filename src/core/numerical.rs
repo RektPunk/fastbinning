@@ -1,4 +1,5 @@
 use crate::core::prenumerical::PreNumBinStats;
+use crate::core::woeiv::calc_woe_iv;
 use ndarray::{Array2, ArrayView1};
 use pyo3::prelude::*;
 use rayon::prelude::*;
@@ -9,12 +10,11 @@ pub enum Trend {
     Decreasing,
 }
 
-#[derive(Debug)]
 pub struct NumBin {
     pub bin_id: usize,
     pub range: (f64, f64),
-    pub pos: f64,
-    pub neg: f64,
+    pub pos: i32,
+    pub neg: i32,
     pub woe: f64,
     pub iv: f64,
     pub is_missing: bool,
@@ -24,13 +24,15 @@ pub struct NumBin {
 pub struct NumericalBinning {
     pub max_bins: usize,
     pub initial_bins_count: usize,
+    pub min_bin_size: f64,
 }
 
 impl NumericalBinning {
-    pub fn new(max_bins: usize, initial_bins_count: usize) -> Self {
+    pub fn new(max_bins: usize, initial_bins_count: usize, min_bin_size: f64) -> Self {
         Self {
             max_bins,
             initial_bins_count,
+            min_bin_size,
         }
     }
 
@@ -47,14 +49,14 @@ impl NumericalBinning {
     }
 
     fn prebinning(&self, x: ArrayView1<f64>, y: ArrayView1<i32>) -> PreNumBinStats {
-        let (mut missing_pos, mut missing_neg) = (0.0, 0.0);
+        let (mut missing_pos, mut missing_neg) = (0, 0);
         let mut data: Vec<(f64, i32)> = Vec::with_capacity(x.len());
         for (&v, &t) in x.iter().zip(y.iter()) {
             if v.is_nan() {
                 if t == 1 {
-                    missing_pos += 1.0;
+                    missing_pos += 1;
                 } else {
-                    missing_neg += 1.0;
+                    missing_neg += 1;
                 }
                 continue;
             }
@@ -64,18 +66,18 @@ impl NumericalBinning {
         data.par_sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
         let chunk_size: usize =
             ((data.len() as f64 / self.initial_bins_count as f64).ceil() as usize).max(1);
-        let mut pos_counts: Vec<f64> = Vec::new();
-        let mut neg_counts: Vec<f64> = Vec::new();
+        let mut pos_counts: Vec<i32> = Vec::new();
+        let mut neg_counts: Vec<i32> = Vec::new();
         let mut edges: Vec<f64> = Vec::new();
 
         for chunk in data.chunks(chunk_size) {
-            let mut p = 0.0;
+            let mut p = 0;
             for &(_, t) in chunk {
                 if t == 1 {
-                    p += 1.0;
+                    p += 1;
                 }
             }
-            let n = chunk.len() as f64 - p;
+            let n = chunk.len() as i32 - p;
             let edge = chunk[chunk.len() - 1].0;
 
             if let Some(last_e) = edges.last_mut() {
@@ -97,6 +99,8 @@ impl NumericalBinning {
     fn split(&self, stats: &PreNumBinStats, trend: Trend) -> (f64, Vec<usize>) {
         let n = stats.edges.len();
         let k_max = self.max_bins.min(n);
+        let total_samples = stats.total_pos + stats.total_neg;
+        let min_samples = (total_samples as f64 * self.min_bin_size) as i32;
 
         let mut dp = Array2::<f64>::from_elem((k_max + 1, n), f64::NEG_INFINITY);
         let mut last_woe = Array2::<f64>::from_elem((k_max + 1, n), 0.0);
@@ -115,6 +119,9 @@ impl NumericalBinning {
                     }
 
                     let (cur_p, cur_n) = stats.get_counts(j + 1, i);
+                    if cur_p + cur_n < min_samples {
+                        continue;
+                    }
                     let cur_woe = stats.calc_woe_single(cur_p, cur_n);
                     let prev_woe = last_woe[[k - 1, j]];
 
@@ -163,8 +170,8 @@ impl NumericalBinning {
         let mut all_splits = splits.clone();
         all_splits.push(n - 1);
 
-        for (b_id, &end_idx) in all_splits.iter().enumerate() {
-            let (p, n_c) = stats.get_counts(start_idx, end_idx);
+        for (bin_id, &end_idx) in all_splits.iter().enumerate() {
+            let (pos, neg) = stats.get_counts(start_idx, end_idx);
             let left = if start_idx == 0 {
                 f64::NEG_INFINITY
             } else {
@@ -176,16 +183,12 @@ impl NumericalBinning {
                 stats.edges[end_idx]
             };
 
-            let py = p / grand_total_pos;
-            let pn = n_c / grand_total_neg;
-            let woe = (py / pn.max(1e-10)).ln();
-            let iv = (py - pn) * woe;
-
+            let (woe, iv) = calc_woe_iv(pos, neg, grand_total_pos, grand_total_neg);
             bins.push(NumBin {
-                bin_id: b_id,
+                bin_id,
                 range: (left, right),
-                pos: p,
-                neg: n_c,
+                pos,
+                neg,
                 woe,
                 iv,
                 is_missing: false,
@@ -193,12 +196,13 @@ impl NumericalBinning {
             start_idx = end_idx + 1;
         }
 
-        if stats.missing_pos + stats.missing_neg > 0.0 {
-            let py = stats.missing_pos / grand_total_pos;
-            let pn = stats.missing_neg / grand_total_neg;
-            let woe = (py / pn.max(1e-10)).ln();
-            let iv = (py - pn) * woe;
-
+        if stats.missing_pos + stats.missing_neg > 0 {
+            let (woe, iv) = calc_woe_iv(
+                stats.missing_pos,
+                stats.missing_neg,
+                grand_total_pos,
+                grand_total_neg,
+            );
             bins.push(NumBin {
                 bin_id: bins.len(),
                 range: (f64::NAN, f64::NAN),

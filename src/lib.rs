@@ -5,7 +5,7 @@ mod core;
 use crate::core::categorical::CategoricalBinning;
 use crate::core::numerical::NumericalBinning;
 
-#[pyclass(from_py_object)]
+#[pyclass(skip_from_py_object)]
 #[derive(Clone)]
 pub struct PyNumBin {
     #[pyo3(get)]
@@ -13,9 +13,9 @@ pub struct PyNumBin {
     #[pyo3(get)]
     pub range: (f64, f64),
     #[pyo3(get)]
-    pub pos: f64,
+    pub pos: i32,
     #[pyo3(get)]
-    pub neg: f64,
+    pub neg: i32,
     #[pyo3(get)]
     pub woe: f64,
     #[pyo3(get)]
@@ -24,7 +24,7 @@ pub struct PyNumBin {
     pub is_missing: bool,
 }
 
-#[pyclass(from_py_object)]
+#[pyclass(skip_from_py_object)]
 #[derive(Clone)]
 pub struct PyCatBin {
     #[pyo3(get)]
@@ -32,9 +32,9 @@ pub struct PyCatBin {
     #[pyo3(get)]
     pub categories: Vec<String>,
     #[pyo3(get)]
-    pub pos: f64,
+    pub pos: i32,
     #[pyo3(get)]
-    pub neg: f64,
+    pub neg: i32,
     #[pyo3(get)]
     pub woe: f64,
     #[pyo3(get)]
@@ -46,8 +46,8 @@ pub struct PyCatBin {
 #[pymethods]
 impl NumericalBinning {
     #[new]
-    pub fn pynew(max_bins: usize, initial_bins_count: usize) -> Self {
-        Self::new(max_bins, initial_bins_count)
+    pub fn pynew(max_bins: usize, initial_bins_count: usize, min_bin_size: f64) -> Self {
+        Self::new(max_bins, initial_bins_count, min_bin_size)
     }
 
     pub fn fit(
@@ -77,8 +77,8 @@ impl NumericalBinning {
 #[pymethods]
 impl CategoricalBinning {
     #[new]
-    pub fn pynew(max_bins: usize) -> Self {
-        Self::new(max_bins)
+    pub fn pynew(max_bins: usize, min_bin_size: f64) -> Self {
+        Self::new(max_bins, min_bin_size)
     }
 
     pub fn fit(

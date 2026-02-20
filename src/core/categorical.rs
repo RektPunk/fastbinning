@@ -1,15 +1,15 @@
 use crate::core::precategorical::PreCatBinStats;
+use crate::core::woeiv::calc_woe_iv;
 use ndarray::Array2;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::collections::HashMap;
 
-#[derive(Debug)]
 pub struct CatBin {
     pub bin_id: usize,
     pub categories: Vec<String>,
-    pub pos: f64,
-    pub neg: f64,
+    pub pos: i32,
+    pub neg: i32,
     pub woe: f64,
     pub iv: f64,
     pub is_missing: bool,
@@ -18,11 +18,15 @@ pub struct CatBin {
 #[pyclass]
 pub struct CategoricalBinning {
     pub max_bins: usize,
+    pub min_bin_size: f64,
 }
 
 impl CategoricalBinning {
-    pub fn new(max_bins: usize) -> Self {
-        Self { max_bins }
+    pub fn new(max_bins: usize, min_bin_size: f64) -> Self {
+        Self {
+            max_bins,
+            min_bin_size,
+        }
     }
 
     pub fn execute_fit(&self, x: &[i32], y: &[i32], category_names: Vec<String>) -> Vec<CatBin> {
@@ -37,31 +41,31 @@ impl CategoricalBinning {
             .par_iter()
             .zip(y.par_iter())
             .fold(
-                || (HashMap::<i32, (f64, f64)>::new(), 0.0, 0.0),
+                || (HashMap::<i32, (i32, i32)>::new(), 0, 0),
                 |(mut map, mut mp, mut mn), (&val, &target)| {
                     if val == -1 {
                         // pandas factorize NaN
                         if target == 1 {
-                            mp += 1.0;
+                            mp += 1;
                         } else {
-                            mn += 1.0;
+                            mn += 1;
                         }
                     } else {
-                        let entry = map.entry(val).or_insert((0.0, 0.0));
+                        let entry = map.entry(val).or_insert((0, 0));
                         if target == 1 {
-                            entry.0 += 1.0;
+                            entry.0 += 1;
                         } else {
-                            entry.1 += 1.0;
+                            entry.1 += 1;
                         }
                     }
                     (map, mp, mn)
                 },
             )
             .reduce(
-                || (HashMap::new(), 0.0, 0.0),
+                || (HashMap::new(), 0, 0),
                 |(mut map1, mp1, mn1), (map2, mp2, mn2)| {
                     for (k, v) in map2 {
-                        let e = map1.entry(k).or_insert((0.0, 0.0));
+                        let e = map1.entry(k).or_insert((0, 0));
                         e.0 += v.0;
                         e.1 += v.1;
                     }
@@ -69,7 +73,7 @@ impl CategoricalBinning {
                 },
             );
 
-        let mut map_stats: Vec<(String, f64, f64)> = final_map
+        let mut map_stats: Vec<(String, i32, i32)> = final_map
             .into_iter()
             .map(|(id, (p, n))| {
                 let name = category_names
@@ -81,8 +85,8 @@ impl CategoricalBinning {
             .collect();
 
         map_stats.par_sort_by(|a, b| {
-            let br_a = a.1 / (a.1 + a.2).max(1.0);
-            let br_b = b.1 / (b.1 + b.2).max(1.0);
+            let br_a = (a.1 as f64 / (a.1 + a.2) as f64).max(1.0);
+            let br_b = (b.1 as f64 / (b.1 + b.2) as f64).max(1.0);
             br_a.partial_cmp(&br_b).unwrap_or(std::cmp::Ordering::Equal)
         });
 
@@ -102,6 +106,8 @@ impl CategoricalBinning {
     fn split(&self, stats: &PreCatBinStats) -> Vec<usize> {
         let n = stats.names.len();
         let k_max = self.max_bins.min(n);
+        let total_samples = stats.total_pos + stats.total_neg;
+        let min_samples = (total_samples as f64 * self.min_bin_size) as i32;
 
         let mut dp = Array2::<f64>::from_elem((k_max + 1, n), f64::NEG_INFINITY);
         let mut best_split = Array2::<usize>::from_elem((k_max + 1, n), 0);
@@ -116,7 +122,10 @@ impl CategoricalBinning {
                     if dp[[k - 1, j]] == f64::NEG_INFINITY {
                         continue;
                     }
-
+                    let (cur_p, cur_n) = stats.get_counts(j + 1, i);
+                    if cur_p + cur_n < min_samples {
+                        continue;
+                    }
                     let current_iv = dp[[k - 1, j]] + stats.calc_iv_range(j + 1, i);
                     if current_iv > dp[[k, i]] {
                         dp[[k, i]] = current_iv;
@@ -155,21 +164,17 @@ impl CategoricalBinning {
         all_splits.push(n - 1);
 
         for (b_id, &end_idx) in all_splits.iter().enumerate() {
-            let (p, n_c) = stats.get_counts(start_idx, end_idx);
+            let (pos, neg) = stats.get_counts(start_idx, end_idx);
             let categories = (start_idx..=end_idx)
                 .map(|i| stats.names[i].clone())
                 .collect();
 
-            let py = p / grand_total_pos;
-            let pn = n_c / grand_total_neg;
-            let woe = (py / pn.max(1e-10)).ln();
-            let iv = (py - pn) * woe;
-
+            let (woe, iv) = calc_woe_iv(pos, neg, grand_total_pos, grand_total_neg);
             bins.push(CatBin {
                 bin_id: b_id,
                 categories,
-                pos: p,
-                neg: n_c,
+                pos,
+                neg,
                 woe,
                 iv,
                 is_missing: false,
@@ -177,12 +182,13 @@ impl CategoricalBinning {
             start_idx = end_idx + 1;
         }
 
-        if stats.missing_pos + stats.missing_neg > 0.0 {
-            let py = stats.missing_pos / grand_total_pos;
-            let pn = stats.missing_neg / grand_total_neg;
-            let woe = (py / pn.max(1e-10)).ln();
-            let iv = (py - pn) * woe;
-
+        if stats.missing_pos + stats.missing_neg > 0 {
+            let (woe, iv) = calc_woe_iv(
+                stats.missing_pos,
+                stats.missing_neg,
+                grand_total_pos,
+                grand_total_neg,
+            );
             bins.push(CatBin {
                 bin_id: bins.len(),
                 categories: vec!["Missing".to_string()],
