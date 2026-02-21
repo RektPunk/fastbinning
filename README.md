@@ -17,8 +17,6 @@ A high-performance **binning** library specifically designed for Credit Risk Mod
 
 In Credit Risk Modeling, feature engineering with millions of rows often feels like a bottleneck. You need to ensure Monotonicity, handle Missing Values, and maximize Information Value (IV)—all while your Python script runs for minutes (or even hours). `fastbinning` was born to solve this. It delivers the near optimal mathematical precision of optimal binning at speeds you've never experienced before.
 
-
-
 ## Why fastbinning?
 
 * Monotonicity Guaranteed: No more manual tweaking. Automatically enforces a monotonic trend in Weight of Evidence (WoE) for numerical features.
@@ -33,7 +31,6 @@ pip install fastbinning
 
 ## Example
 Please refer to the [**Examples**](https://github.com/RektPunk/fastbinning/tree/main/examples) provided for further clarification.
-
 
 ## Benchmark
 We sacrifice little of Information Value to achieve nearly two orders of magnitude speed improvement.
