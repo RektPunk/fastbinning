@@ -1,0 +1,31 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "fastbinning"
+version = "0.0.1"
+description = "A high-performance binning library specifically designed for Credit Risk Modeling and Scorecard Development."
+authors = [
+    {name = "RektPunk", email = "rektpunk@gmail.com"},
+]
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.21.6",
+]
+
+[project.urls]
+repository = "https://github.com/RektPunk/rektrag"
+
+[dependency-groups]
+dev = [
+    "maturin>=1.12.3",
+    "pandas>=1.1.5",
+    "scikit-learn>=1.0.2",
+]
+
+[tool.maturin]
+python-source = "python"
+module-name = "fastbinning"
+include = ["python/fastbinning/*.pyi", "python/fastbinning/py.typed"]
