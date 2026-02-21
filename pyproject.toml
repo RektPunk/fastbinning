@@ -10,7 +10,7 @@ authors = [
     {name = "RektPunk", email = "rektpunk@gmail.com"},
 ]
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dependencies = [
     "numpy>=1.21.6",
 ]
@@ -29,3 +29,4 @@ dev = [
 python-source = "python"
 module-name = "fastbinning"
 include = ["python/fastbinning/*.pyi", "python/fastbinning/py.typed"]
+compatibility = "abi3"

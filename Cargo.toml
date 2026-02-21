@@ -10,6 +10,6 @@ crate-type = ["cdylib"]
 [dependencies]
 rayon = "1.10"
 serde = { version = "1.0", features = ["derive"] }
-pyo3 = { version = "0.28", features = ["extension-module"] }
+pyo3 = { version = "0.28", features = ["extension-module", "abi3-py38"] }
 ndarray = "0.17"
 numpy="0.28"
