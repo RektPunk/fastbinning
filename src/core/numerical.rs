@@ -64,7 +64,7 @@ impl NumericalBinning {
         data.par_sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
 
         let n: usize = data.len();
-        let prebins_count: usize = ((n as f64).sqrt() as usize).clamp(200, 3000);
+        let prebins_count: usize = ((n as f64).sqrt() as usize).clamp(100, 500);
         let chunk_size: usize = (n as f64 / prebins_count as f64).ceil() as usize;
         let mut pos_counts: Vec<i32> = Vec::new();
         let mut neg_counts: Vec<i32> = Vec::new();
@@ -125,8 +125,8 @@ impl NumericalBinning {
                     let prev_woe = last_woe[[k - 1, j]];
 
                     let is_monotonic = match trend {
-                        Trend::Increasing => cur_woe > prev_woe,
-                        Trend::Decreasing => cur_woe < prev_woe,
+                        Trend::Increasing => cur_woe >= prev_woe - f64::EPSILON,
+                        Trend::Decreasing => cur_woe <= prev_woe + f64::EPSILON,
                     };
 
                     if is_monotonic {

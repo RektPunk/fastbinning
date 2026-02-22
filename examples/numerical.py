@@ -1,7 +1,7 @@
 import time
 
-import fastbinning
 import numpy as np
+from fastbinning import NumericalBinning
 
 if __name__ == "__main__":
     # -------------------------------------------------------------------------
@@ -24,12 +24,8 @@ if __name__ == "__main__":
     # Configure Numerical Binning
     # -------------------------------------------------------------------------
     # max_bins: Final number of bins to produce
-    # initial_bins_count: Pre-binning resolution for speed/accuracy trade-off
     # min_bin_pct: Minimum sample size required for each bin (10%)
-    numerical_binning = fastbinning.NumericalBinning(
-        max_bins=5,
-        min_bin_pct=0.001,
-    )
+    numerical_binning = NumericalBinning(max_bins=10, min_bin_pct=0.1)
 
     # -------------------------------------------------------------------------
     # Performance Benchmark & Fitting

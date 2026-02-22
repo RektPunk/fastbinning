@@ -15,7 +15,11 @@ A high-performance **binning** library specifically designed for Credit Risk Mod
 
 ## Let's be honest: Binning is a pain. 
 
-In Credit Risk Modeling, feature engineering with millions of rows often feels like a bottleneck. You need to ensure Monotonicity, handle Missing Values, and maximize Information Value (IV)—all while your Python script runs for minutes (or even hours). `fastbinning` was born to solve this. It delivers the near optimal mathematical precision of optimal binning at speeds you've never experienced before.
+In Credit Risk Modeling, feature engineering with millions of rows often feels like a bottleneck. 
+
+You need to ensure Monotonicity, handle Missing Values, and maximize Information Value (IV)—all while your Python script runs for minutes (or even hours). 
+
+`fastbinning` was born to solve this. It delivers the near optimal mathematical precision of optimal binning at speeds you've never experienced before.
 
 ## Why fastbinning?
 
@@ -37,9 +41,9 @@ We sacrifice little of Information Value to achieve nearly two orders of magnitu
 
 | Sample Size | Metric             | fastbinning  | optbinning  | comparison          |
 |-------------|--------------------|--------------|-------------|---------------------|
-| 10,000,000  | Execution Time     | **0.1671s**  | 13.9333s    | **83.37x** Faster   |
-|             | Information Value  | 2.1125       | 2.1491      | **98.30%** Fidelity |
-| 1,000,000   | Execution Time     | **0.0155s**  | 1.0257s     | **66.28x** Faster   |
-|             | Information Value  | 2.1130       | 2.1582      | **97.91%** Fidelity |
+| 1,000,000   | Execution Time     | **0.0216s**   | 1.0197s     | **47.14x** Faster   |
+|             | Information Value  | 2.3013       |  2.3190     | **99.24%** Fidelity |
+| 10,000,000  | Execution Time     | **0.1817s**  | 13.4070s    | **73.79x** Faster   |
+|             | Information Value  | 2.2990       | 2.3177      | **99.19%** Fidelity |
 
 Reproducibility: You can reproduce these results by running the [**script**](https://github.com/RektPunk/fastbinning/tree/main/examples/benchmark.py).
