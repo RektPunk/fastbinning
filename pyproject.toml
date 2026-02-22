@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "fastbinning"
-version = "0.0.1"
+version = "0.0.2"
 description = "A high-performance binning library specifically designed for Credit Risk Modeling and Scorecard Development."
 authors = [
     {name = "RektPunk", email = "rektpunk@gmail.com"},
