@@ -15,17 +15,15 @@ A high-performance **binning** library specifically designed for Credit Risk Mod
 
 ## Let's be honest: Binning is a pain. 
 
-In Credit Risk Modeling, feature engineering with millions of rows often feels like a bottleneck. 
+In Credit Risk Modeling, binning with millions of rows often feels like a bottleneck.  You need to ensure Monotonicity, handle Missing Values, and maximize IV—all while your script runs for minutes.
 
-You need to ensure Monotonicity, handle Missing Values, and maximize Information Value (IV)—all while your Python script runs for minutes (or even hours). 
-
-`fastbinning` was born to solve this. It delivers the near optimal mathematical precision of optimal binning at speeds you've never experienced before.
+`fastbinning` was born to solve this.  It delivers the near optimal mathematical precision of optimal binning at speeds you've never experienced before.
 
 ## Why fastbinning?
 
 * Monotonicity Guaranteed: No more manual tweaking. Automatically enforces a monotonic trend in Weight of Evidence (WoE) for numerical features.
 * Built for the Impatient: Binning shouldn't be a coffee break. It processes 10M+ records in milliseconds.
-* Near-Optimal Accuracy: Achieves near-optimal IV fidelity compared to Mixed-Integer Linear Programming solvers.
+* Near-Optimal: Achieves near-optimal IV fidelity compared to Mixed-Integer Linear Programming solvers.
 
 ## Installation
 Install using pip:
