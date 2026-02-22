@@ -23,15 +23,13 @@ pub struct NumBin {
 #[pyclass]
 pub struct NumericalBinning {
     pub max_bins: usize,
-    pub initial_bins_count: usize,
     pub min_bin_pct: f64,
 }
 
 impl NumericalBinning {
-    pub fn new(max_bins: usize, initial_bins_count: usize, min_bin_pct: f64) -> Self {
+    pub fn new(max_bins: usize, min_bin_pct: f64) -> Self {
         Self {
             max_bins,
-            initial_bins_count,
             min_bin_pct,
         }
     }
@@ -64,35 +62,36 @@ impl NumericalBinning {
         }
 
         data.par_sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-        let chunk_size: usize =
-            ((data.len() as f64 / self.initial_bins_count as f64).ceil() as usize).max(1);
+
+        let n: usize = data.len();
+        let prebins_count: usize = ((n as f64).sqrt() as usize).clamp(100, 500);
+        let chunk_size: usize = (n as f64 / prebins_count as f64).ceil() as usize;
         let mut pos_counts: Vec<i32> = Vec::new();
         let mut neg_counts: Vec<i32> = Vec::new();
         let mut edges: Vec<f64> = Vec::new();
 
-        for chunk in data.chunks(chunk_size) {
-            let mut p = 0;
-            for &(_, t) in chunk {
-                if t == 1 {
-                    p += 1;
-                }
+        let mut curr_p: i32 = 0;
+        let mut curr_n: i32 = 0;
+        let mut curr_count: usize = 0;
+        for i in 0..n {
+            let (val, target) = data[i];
+            if target == 1 {
+                curr_p += 1;
+            } else {
+                curr_n += 1;
             }
-            let n = chunk.len() as i32 - p;
-            let edge = chunk[chunk.len() - 1].0;
+            curr_count += 1;
 
-            if let Some(last_e) = edges.last_mut() {
-                if (*last_e - edge).abs() < f64::EPSILON {
-                    let idx: usize = pos_counts.len() - 1;
-                    pos_counts[idx] += p;
-                    neg_counts[idx] += n;
-                    continue;
-                }
+            if i == n - 1 || (curr_count >= chunk_size && data[i + 1].0 != val) {
+                pos_counts.push(curr_p);
+                neg_counts.push(curr_n);
+                edges.push(val);
+
+                curr_p = 0;
+                curr_n = 0;
+                curr_count = 0;
             }
-            pos_counts.push(p);
-            neg_counts.push(n);
-            edges.push(edge);
         }
-
         PreNumBinStats::new(&pos_counts, &neg_counts, edges, missing_pos, missing_neg)
     }
 
@@ -126,8 +125,8 @@ impl NumericalBinning {
                     let prev_woe = last_woe[[k - 1, j]];
 
                     let is_monotonic = match trend {
-                        Trend::Increasing => cur_woe > prev_woe,
-                        Trend::Decreasing => cur_woe < prev_woe,
+                        Trend::Increasing => cur_woe >= prev_woe - f64::EPSILON,
+                        Trend::Decreasing => cur_woe <= prev_woe + f64::EPSILON,
                     };
 
                     if is_monotonic {

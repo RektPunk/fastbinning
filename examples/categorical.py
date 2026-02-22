@@ -1,8 +1,8 @@
 import time
 
-import fastbinning
 import numpy as np
 import pandas as pd
+from fastbinning import CategoricalBinning
 from sklearn.preprocessing import OrdinalEncoder
 
 if __name__ == "__main__":
@@ -27,8 +27,8 @@ if __name__ == "__main__":
     # Configure Categorical Binning
     # -------------------------------------------------------------------------
     # max_bins: Final number of bins to produce
-    # min_bin_pct: Minimum sample size required for each bin (5%)
-    categorical_binning = fastbinning.CategoricalBinning(max_bins=3, min_bin_pct=0.05)
+    # min_bin_pct: Minimum sample size required for each bin (10%)
+    categorical_binning = CategoricalBinning(max_bins=3, min_bin_pct=0.1)
 
     # -------------------------------------------------------------------------
     # TEST 1: Using pd.factorize (Natural Order Mapping)

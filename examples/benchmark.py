@@ -20,7 +20,7 @@ def run_benchmark(n_samples: int, seed: int = 42):
     # max_bins: Final number of bins to produce
     # initial_bins_count: Pre-binning resolution for speed/accuracy trade-off
     # min_bin_pct: Minimum sample size required for each bin (10%)
-    fb = NumericalBinning(max_bins=5, initial_bins_count=500, min_bin_pct=0.2)
+    fb = NumericalBinning(max_bins=10, min_bin_pct=0.1)
     start = time.perf_counter()
     fb_results = fb.fit(x, y)
     fb_time = time.perf_counter() - start
@@ -28,7 +28,7 @@ def run_benchmark(n_samples: int, seed: int = 42):
     # -------------------------------------------------------------------------
     # Configure Optimal Binning
     # -------------------------------------------------------------------------
-    optb = OptimalBinning(name="feature", dtype="numerical", max_n_bins=5)
+    optb = OptimalBinning(name="feature", dtype="numerical", max_n_bins=10)
     start = time.perf_counter()
     optb.fit(x, y)
     opt_time = time.perf_counter() - start
