@@ -28,8 +28,7 @@ if __name__ == "__main__":
     # min_bin_pct: Minimum sample size required for each bin (10%)
     numerical_binning = fastbinning.NumericalBinning(
         max_bins=5,
-        initial_bins_count=500,
-        min_bin_pct=0.20,
+        min_bin_pct=0.001,
     )
 
     # -------------------------------------------------------------------------

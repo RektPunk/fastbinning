@@ -28,10 +28,9 @@ class PyCatBin:
 class NumericalBinning:
     """High-performance numerical binning using Dynamic Programming
     with Monotonic WoE constraint."""
-    def __init__(self, max_bins: int, initial_bins_count: int, min_bin_pct: float):
+    def __init__(self, max_bins: int, min_bin_pct: float):
         """Args:
         max_bins: Maximum number of bins to create.
-        initial_bins_count: Number of pre-bins for initial data compression.
         min_bin_pct: Minimum proportion of samples required in each bin (0.0 to 1.0).
         """
         ...
