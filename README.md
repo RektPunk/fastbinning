@@ -1,5 +1,5 @@
 <div style="text-align: center;">
-  <img src="https://capsule-render.vercel.app/api?type=transparent&height=300&color=gradient&text=fastbinning&section=header&reversal=false&height=120&fontSize=90">
+  <img src="https://capsule-render.vercel.app/api?type=transparent&height=300&color=gradient&text=fastbinning&section=header&reversal=false&height=120&fontSize=90&fontColor=ff5500">
 </div>
 <p align="center">
   <a href="https://github.com/RektPunk/fastbinning/releases/latest">
