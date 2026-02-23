@@ -37,11 +37,14 @@ if __name__ == "__main__":
 
     # pd.factorize maps NaNs to -1 by default
     codes, uniques = pd.factorize(df["grade"])
-    uniques_list = uniques.astype(str).tolist()
+    codes = codes.astype(np.int32)
+
+    print(f"Unique Categories found: {uniques.tolist()}")
+    print(f"Total NaNs encoded as -1: {(codes == -1).sum():,}")
+    print(f"Encoder Categories (pd.factorize): {uniques.astype(str).tolist()}")
+
     start_time = time.perf_counter()
-    categorical_bins = categorical_binning.fit(
-        codes.astype(np.int32), df["target"].values
-    )
+    categorical_bins = categorical_binning.fit(codes, df["target"].values)
     end_time = time.perf_counter()
 
     print(f"Execution Time: {(end_time - start_time) * 1000:.2f} ms")
@@ -75,17 +78,11 @@ if __name__ == "__main__":
     # Reshape for sklearn and flatten back to 1D
     codes = enc.fit_transform(df[["grade"]].to_numpy()).astype(np.int32).flatten()
 
-    # Extract category names while removing 'nan' from the unique labels list
-    uniques_list = enc.categories_[0].astype(str).tolist()
-    uniques_list = [c for c in uniques_list if c not in ["nan", "None", "NoneType"]]
-
-    print("Encoder Categories (Actual Mapping):", enc.categories_[0])
-    print("Processed Unique Labels List:", uniques_list)
-
+    # Extract category names while treat 'nan' as -1
+    print(f"Encoder Categories (OrdinalEncoder): {enc.categories_[0]}")
+    print(f"Total NaNs encoded as -1: {(codes == -1).sum():,}")
     start_time = time.perf_counter()
-    categorical_bins = categorical_binning.fit(
-        codes.astype(np.int32), df["target"].values
-    )
+    categorical_bins = categorical_binning.fit(codes, df["target"].values)
     end_time = time.perf_counter()
 
     print(f"Execution Time: {(end_time - start_time) * 1000:.2f} ms")
@@ -110,5 +107,4 @@ if __name__ == "__main__":
     start_time = time.perf_counter()
     transformed = categorical_binning.transform(codes)
     end_time = time.perf_counter()
-    print(type(transformed))
     print(f"Execution transform Time: {(end_time - start_time) * 1000:.2f} ms")
