@@ -25,6 +25,7 @@ impl NumericalBinning {
         Self {
             max_bins,
             min_bin_pct,
+            bins: None,
         }
     }
 
@@ -207,5 +208,43 @@ impl NumericalBinning {
             });
         }
         bins
+    }
+
+    pub fn execute_transform(&self, x: ArrayView1<f64>, bins: &Vec<NumBin>) -> Vec<f64> {
+        let mut output = Vec::with_capacity(x.len());
+        let missing_woe = bins
+            .iter()
+            .find(|b| b.is_missing)
+            .map(|b| b.woe)
+            .unwrap_or(0.0);
+        let thresholds: Vec<f64> = bins
+            .iter()
+            .filter(|b| !b.is_missing)
+            .map(|b| b.range.1)
+            .collect();
+        let woe_map: Vec<f64> = bins
+            .iter()
+            .filter(|b| !b.is_missing)
+            .map(|b| b.woe)
+            .collect();
+
+        for &val in x.iter() {
+            if val.is_nan() {
+                output.push(missing_woe);
+            } else {
+                let idx = thresholds
+                    .binary_search_by(|probe| {
+                        if probe < &val {
+                            std::cmp::Ordering::Less
+                        } else {
+                            std::cmp::Ordering::Greater
+                        }
+                    })
+                    .unwrap_err();
+
+                output.push(woe_map[idx]);
+            }
+        }
+        output
     }
 }

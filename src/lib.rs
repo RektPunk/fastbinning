@@ -1,7 +1,8 @@
-use numpy::PyReadonlyArray1;
+use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1};
 use pyo3::prelude::*;
 
 mod core;
+use crate::core::numerical::NumBin;
 
 #[pyclass(skip_from_py_object)]
 #[derive(Clone)]
@@ -45,6 +46,7 @@ pub struct PyCatBin {
 pub struct NumericalBinning {
     pub max_bins: usize,
     pub min_bin_pct: f64,
+    pub bins: Option<Vec<NumBin>>,
 }
 
 #[pymethods]
@@ -55,15 +57,15 @@ impl NumericalBinning {
     }
 
     pub fn fit(
-        &self,
+        &mut self,
         x: PyReadonlyArray1<f64>,
         y: PyReadonlyArray1<i32>,
     ) -> PyResult<Vec<PyNumBin>> {
         let x_view = x.as_array();
         let y_view = y.as_array();
         let results = self.execute_fit(x_view, y_view);
-        let py_results = results
-            .into_iter()
+        let py_results: Vec<PyNumBin> = results
+            .iter()
             .map(|b| PyNumBin {
                 bin_id: b.bin_id,
                 range: b.range,
@@ -74,7 +76,23 @@ impl NumericalBinning {
                 is_missing: b.is_missing,
             })
             .collect();
+        self.bins = Some(results);
         Ok(py_results)
+    }
+
+    pub fn transform<'py>(
+        &self,
+        py: Python<'py>,
+        x: PyReadonlyArray1<'py, f64>,
+    ) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let bins = self.bins.as_ref().ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
+                "NotFittedError: Call fit() before transform()",
+            )
+        })?;
+        let x_view = x.as_array();
+        let output: Vec<f64> = self.execute_transform(x_view, bins);
+        Ok(output.into_pyarray(py))
     }
 }
 
