@@ -2,8 +2,6 @@ use numpy::PyReadonlyArray1;
 use pyo3::prelude::*;
 
 mod core;
-use crate::core::categorical::CategoricalBinning;
-use crate::core::numerical::NumericalBinning;
 
 #[pyclass(skip_from_py_object)]
 #[derive(Clone)]
@@ -43,6 +41,12 @@ pub struct PyCatBin {
     pub is_missing: bool,
 }
 
+#[pyclass]
+pub struct NumericalBinning {
+    pub max_bins: usize,
+    pub min_bin_pct: f64,
+}
+
 #[pymethods]
 impl NumericalBinning {
     #[new]
@@ -72,6 +76,12 @@ impl NumericalBinning {
             .collect();
         Ok(py_results)
     }
+}
+
+#[pyclass]
+pub struct CategoricalBinning {
+    pub max_bins: usize,
+    pub min_bin_pct: f64,
 }
 
 #[pymethods]

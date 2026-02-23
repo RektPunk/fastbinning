@@ -1,7 +1,7 @@
+use crate::CategoricalBinning;
 use crate::core::precategorical::PreCatBinStats;
 use crate::core::woeiv::calc_woe_iv;
 use ndarray::Array2;
-use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::collections::HashMap;
 
@@ -13,12 +13,6 @@ pub struct CatBin {
     pub woe: f64,
     pub iv: f64,
     pub is_missing: bool,
-}
-
-#[pyclass]
-pub struct CategoricalBinning {
-    pub max_bins: usize,
-    pub min_bin_pct: f64,
 }
 
 impl CategoricalBinning {

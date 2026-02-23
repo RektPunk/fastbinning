@@ -1,7 +1,7 @@
+use crate::NumericalBinning;
 use crate::core::prenumerical::PreNumBinStats;
 use crate::core::woeiv::calc_woe_iv;
 use ndarray::{Array2, ArrayView1};
-use pyo3::prelude::*;
 use rayon::prelude::*;
 
 #[derive(PartialEq, Clone, Copy)]
@@ -18,12 +18,6 @@ pub struct NumBin {
     pub woe: f64,
     pub iv: f64,
     pub is_missing: bool,
-}
-
-#[pyclass]
-pub struct NumericalBinning {
-    pub max_bins: usize,
-    pub min_bin_pct: f64,
 }
 
 impl NumericalBinning {
