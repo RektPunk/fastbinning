@@ -45,13 +45,13 @@ class NumericalBinning:
             A list of PyNumBin objects representing the optimal bins.
         """
         ...
-    
+
     def transform(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
         """Fits the numerical data to fitted woe.
 
         Args:
             x: 1D NumPy array of numerical features (supports NaNs).
-        
+
         Returns:
             1D NumPy array of woe values.
         """
