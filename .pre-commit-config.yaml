@@ -11,7 +11,7 @@ repos:
     - id: check-merge-conflict
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.14.14
+  rev: v0.15.2
   hooks:
     - id: ruff
       name: ruff check
@@ -22,7 +22,7 @@ repos:
     - id: ruff-format
 
 - repo: https://github.com/doublify/pre-commit-rust
-  rev: master
+  rev: v1.0
   hooks:
     - id: fmt
     - id: cargo-check
