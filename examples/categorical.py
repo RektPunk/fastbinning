@@ -40,23 +40,21 @@ if __name__ == "__main__":
     uniques_list = uniques.astype(str).tolist()
     start_time = time.perf_counter()
     categorical_bins = categorical_binning.fit(
-        codes.astype(np.int32), df["target"].values, uniques_list
+        codes.astype(np.int32), df["target"].values
     )
     end_time = time.perf_counter()
 
     print(f"Execution Time: {(end_time - start_time) * 1000:.2f} ms")
     print("-" * 100)
     print(
-        f"{'ID':<3} | {'Categories':<25} | {'Pos':<10} | {'Neg':<10} | {'WoE':<8} | {'IV':<8} | {'Missing'}"
+        f"{'ID':<3} | {'Indices':<25} | {'Pos':<10} | {'Neg':<10} | {'WoE':<8} | {'IV':<8} | {'Missing'}"
     )
     print("-" * 100)
 
     total_iv = 0
     for b in categorical_bins:
-        raw_cat = ", ".join(b.categories)
-        cat_str = (raw_cat[:20] + "...") if len(raw_cat) > 20 else raw_cat
         print(
-            f"{b.bin_id:<3} | {cat_str:<25} | {b.pos:<10} | {b.neg:<10} | {b.woe:>8.4f} | {b.iv:>8.4f} | {b.is_missing}"
+            f"{b.bin_id:<3} | {str(sorted(b.indices)):<25} | {b.pos:<10} | {b.neg:<10} | {b.woe:>8.4f} | {b.iv:>8.4f} | {b.is_missing}"
         )
         total_iv += b.iv
     print("-" * 100)
@@ -86,24 +84,31 @@ if __name__ == "__main__":
 
     start_time = time.perf_counter()
     categorical_bins = categorical_binning.fit(
-        codes.astype(np.int32), df["target"].values, uniques_list
+        codes.astype(np.int32), df["target"].values
     )
     end_time = time.perf_counter()
 
     print(f"Execution Time: {(end_time - start_time) * 1000:.2f} ms")
     print("-" * 100)
     print(
-        f"{'ID':<3} | {'Categories':<25} | {'POS':<10} | {'NEG':<10} | {'WoE':<8} | {'IV':<8} | {'Missing'}"
+        f"{'ID':<3} | {'Indices':<25} | {'POS':<10} | {'NEG':<10} | {'WoE':<8} | {'IV':<8} | {'Missing'}"
     )
     print("-" * 100)
 
     total_iv = 0
     for b in categorical_bins:
-        raw_cat = ", ".join(b.categories)
-        cat_str = (raw_cat[:20] + "...") if len(raw_cat) > 20 else raw_cat
         print(
-            f"{b.bin_id:<3} | {cat_str:<25} | {b.pos:<10} | {b.neg:<10} | {b.woe:>8.4f} | {b.iv:>8.4f} | {b.is_missing}"
+            f"{b.bin_id:<3} | {str(sorted(b.indices)):<25} | {b.pos:<10} | {b.neg:<10} | {b.woe:>8.4f} | {b.iv:>8.4f} | {b.is_missing}"
         )
         total_iv += b.iv
     print("-" * 100)
     print(f"Total IV: {total_iv:.4f}")
+
+    # -------------------------------------------------------------------------
+    # Transform
+    # -------------------------------------------------------------------------
+    start_time = time.perf_counter()
+    transformed = categorical_binning.transform(codes)
+    end_time = time.perf_counter()
+    print(type(transformed))
+    print(f"Execution transform Time: {(end_time - start_time) * 1000:.2f} ms")

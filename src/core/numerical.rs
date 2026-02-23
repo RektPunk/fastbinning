@@ -25,7 +25,7 @@ impl NumericalBinning {
         Self {
             max_bins,
             min_bin_pct,
-            bins: None,
+            _bins: None,
         }
     }
 

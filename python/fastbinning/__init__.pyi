@@ -18,7 +18,7 @@ class PyCatBin:
     """Result container for a single categorical bin."""
 
     bin_id: int
-    categories: List[str]
+    indices: List[int]
     pos: int
     neg: int
     woe: float
@@ -47,7 +47,7 @@ class NumericalBinning:
         ...
 
     def transform(self, x: NDArray[np.float64]) -> NDArray[np.float64]:
-        """Fits the numerical data to fitted woe.
+        """Transforms the numerical data to fitted woe.
 
         Args:
             x: 1D NumPy array of numerical features (supports NaNs).
@@ -66,17 +66,25 @@ class CategoricalBinning:
         """
         ...
 
-    def fit(
-        self, x: NDArray[np.int32], y: NDArray[np.int32], uniques: List[str]
-    ) -> List[PyCatBin]:
+    def fit(self, x: NDArray[np.int32], y: NDArray[np.int32]) -> List[PyCatBin]:
         """Fits the binning model to categorical data.
 
         Args:
             x: 1D NumPy array of encoded category indices.
             y: 1D NumPy array of binary targets (0 or 1).
-            uniques: Original string names of the categories corresponding to indices in x.
 
         Returns:
             A list of PyCatBin objects.
+        """
+        ...
+
+    def transform(self, x: NDArray[np.int32]) -> NDArray[np.float64]:
+        """Transforms the categorical data to fitted woe.
+
+        Args:
+            x: 1D NumPy array of coded features (treat NaNs as -1).
+
+        Returns:
+            1D NumPy array of woe values.
         """
         ...

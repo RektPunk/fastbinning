@@ -2,8 +2,8 @@ use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1};
 use pyo3::prelude::*;
 
 mod core;
+use crate::core::categorical::CatBin;
 use crate::core::numerical::NumBin;
-
 #[pyclass(skip_from_py_object)]
 #[derive(Clone)]
 pub struct PyNumBin {
@@ -29,7 +29,7 @@ pub struct PyCatBin {
     #[pyo3(get)]
     pub bin_id: usize,
     #[pyo3(get)]
-    pub categories: Vec<String>,
+    pub indices: Vec<i32>,
     #[pyo3(get)]
     pub pos: i32,
     #[pyo3(get)]
@@ -46,7 +46,7 @@ pub struct PyCatBin {
 pub struct NumericalBinning {
     pub max_bins: usize,
     pub min_bin_pct: f64,
-    pub bins: Option<Vec<NumBin>>,
+    pub _bins: Option<Vec<NumBin>>,
 }
 
 #[pymethods]
@@ -76,7 +76,7 @@ impl NumericalBinning {
                 is_missing: b.is_missing,
             })
             .collect();
-        self.bins = Some(results);
+        self._bins = Some(results);
         Ok(py_results)
     }
 
@@ -85,13 +85,13 @@ impl NumericalBinning {
         py: Python<'py>,
         x: PyReadonlyArray1<'py, f64>,
     ) -> PyResult<Bound<'py, PyArray1<f64>>> {
-        let bins = self.bins.as_ref().ok_or_else(|| {
+        let _bins = self._bins.as_ref().ok_or_else(|| {
             PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
                 "NotFittedError: Call fit() before transform()",
             )
         })?;
         let x_view = x.as_array();
-        let output: Vec<f64> = self.execute_transform(x_view, bins);
+        let output: Vec<f64> = self.execute_transform(x_view, _bins);
         Ok(output.into_pyarray(py))
     }
 }
@@ -100,6 +100,7 @@ impl NumericalBinning {
 pub struct CategoricalBinning {
     pub max_bins: usize,
     pub min_bin_pct: f64,
+    pub _bins: Option<Vec<CatBin>>,
 }
 
 #[pymethods]
@@ -110,19 +111,18 @@ impl CategoricalBinning {
     }
 
     pub fn fit(
-        &self,
+        &mut self,
         x: PyReadonlyArray1<i32>,
         y: PyReadonlyArray1<i32>,
-        category_names: Vec<String>,
     ) -> PyResult<Vec<PyCatBin>> {
         let x_slice = x.as_slice().expect("x array must be contiguous");
         let y_slice = y.as_slice().expect("y array must be contiguous");
-        let results = self.execute_fit(x_slice, y_slice, category_names);
+        let results = self.execute_fit(x_slice, y_slice);
         let py_results = results
-            .into_iter()
+            .iter()
             .map(|b| PyCatBin {
                 bin_id: b.bin_id,
-                categories: b.categories,
+                indices: b.indices.clone(),
                 pos: b.pos,
                 neg: b.neg,
                 woe: b.woe,
@@ -130,7 +130,23 @@ impl CategoricalBinning {
                 is_missing: b.is_missing,
             })
             .collect();
+        self._bins = Some(results);
         Ok(py_results)
+    }
+
+    pub fn transform<'py>(
+        &self,
+        py: Python<'py>,
+        x: PyReadonlyArray1<'py, i32>,
+    ) -> PyResult<Bound<'py, PyArray1<f64>>> {
+        let _bins = self._bins.as_ref().ok_or_else(|| {
+            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
+                "NotFittedError: Call fit() before transform()",
+            )
+        })?;
+        let x_view = x.as_slice().expect("x array must be contiguous");
+        let output: Vec<f64> = self.execute_transform(x_view, _bins);
+        Ok(output.into_pyarray(py))
     }
 }
 
