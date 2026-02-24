@@ -21,10 +21,11 @@ pub struct NumBin {
 }
 
 impl NumericalBinning {
-    pub fn new(max_bins: usize, min_bin_pct: f64) -> Self {
+    pub fn new(max_bins: usize, min_bin_pct: f64, max_bin_pct: f64) -> Self {
         Self {
             max_bins,
             min_bin_pct,
+            max_bin_pct,
             _bins: None,
         }
     }
@@ -95,6 +96,7 @@ impl NumericalBinning {
         let k_max = self.max_bins.min(n);
         let total_samples = stats.total_pos + stats.total_neg;
         let min_samples = (total_samples as f64 * self.min_bin_pct) as i32;
+        let max_samples = (total_samples as f64 * self.max_bin_pct) as i32;
 
         let mut dp = Array2::<f64>::from_elem((k_max + 1, n), f64::NEG_INFINITY);
         let mut last_woe = Array2::<f64>::from_elem((k_max + 1, n), 0.0);
@@ -102,8 +104,11 @@ impl NumericalBinning {
 
         for i in 0..n {
             let (p, n_c) = stats.get_counts(0, i);
-            dp[[1, i]] = stats.calc_iv_range(0, i);
-            last_woe[[1, i]] = stats.calc_woe_single(p, n_c);
+            let total = p + n_c;
+            if total >= min_samples && total <= max_samples {
+                dp[[1, i]] = stats.calc_iv_range(0, i);
+                last_woe[[1, i]] = stats.calc_woe_single(p, n_c);
+            }
         }
         for k in 2..=k_max {
             for i in (k - 1)..n {
@@ -113,7 +118,7 @@ impl NumericalBinning {
                     }
 
                     let (cur_p, cur_n) = stats.get_counts(j + 1, i);
-                    if cur_p + cur_n < min_samples {
+                    if cur_p + cur_n < min_samples || cur_p + cur_n > max_samples {
                         continue;
                     }
                     let cur_woe = stats.calc_woe_single(cur_p, cur_n);
