@@ -38,7 +38,7 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # Result Visualization
     # -------------------------------------------------------------------------
-    print(f"Execution Time: {(end_time - start_time) * 1000:.2f} ms")
+    print(f"Execution Fitting Time: {(end_time - start_time) * 1000:.2f} ms")
     print("-" * 100)
     print(
         f"{'ID':<3} | {'Range':<25} | {'Pos':<10} | {'Neg':<10} |{'WoE':<8} | {'IV':<8} | {'Missing'}"
@@ -66,3 +66,27 @@ if __name__ == "__main__":
     transformed = numerical_binning.transform(x_num)
     end_time = time.perf_counter()
     print(f"Execution transform Time: {(end_time - start_time) * 1000:.2f} ms")
+
+    # -------------------------------------------------------------------------
+    # Fit Transform
+    # -------------------------------------------------------------------------
+    _transformed = numerical_binning.fit_transform(x_num, y_num)
+    assert all(transformed == _transformed)
+
+    # -------------------------------------------------------------------------
+    # Bins
+    # -------------------------------------------------------------------------
+    print("-" * 100)
+    print(
+        f"{'ID':<3} | {'Range':<25} | {'Pos':<10} | {'Neg':<10} |{'WoE':<8} | {'IV':<8} | {'Missing'}"
+    )
+    print("-" * 100)
+    for b in numerical_binning.bins:
+        range_str = (
+            f"({b.range[0]:>7.2f}, {b.range[1]:>7.2f}]" if not b.is_missing else "NaN"
+        )
+
+        print(
+            f"{b.bin_id:<3} | {range_str:<25} | {b.pos:<10} | {b.neg:<10} | {b.woe:>8.4f} | {b.iv:>8.4f} | {b.is_missing}"
+        )
+    print("-" * 100)
