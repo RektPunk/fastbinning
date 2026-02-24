@@ -47,7 +47,9 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # max_bins: Final number of bins to produce
     # min_bin_pct: Minimum sample size required for each bin (10%)
-    categorical_binning = CategoricalBinning(max_bins=3, min_bin_pct=0.1)
+    categorical_binning = CategoricalBinning(
+        max_bins=3, min_bin_pct=0.05, max_bin_pct=1
+    )
     y = df["target"].values.astype(np.int32)
 
     # -------------------------------------------------------------------------

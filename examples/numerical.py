@@ -49,7 +49,7 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # max_bins: Final number of bins to produce
     # min_bin_pct: Minimum sample size required for each bin (10%)
-    numerical_binning = NumericalBinning(max_bins=10, min_bin_pct=0.1)
+    numerical_binning = NumericalBinning(max_bins=10, min_bin_pct=0.05, max_bin_pct=0.1)
 
     # -------------------------------------------------------------------------
     # Performance Benchmark & Fitting

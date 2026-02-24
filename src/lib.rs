@@ -58,14 +58,15 @@ pub struct PyCatBin {
 pub struct NumericalBinning {
     pub max_bins: usize,
     pub min_bin_pct: f64,
+    pub max_bin_pct: f64,
     pub _bins: Option<Vec<NumBin>>,
 }
 
 #[pymethods]
 impl NumericalBinning {
     #[new]
-    pub fn pynew(max_bins: usize, min_bin_pct: f64) -> Self {
-        Self::new(max_bins, min_bin_pct)
+    pub fn pynew(max_bins: usize, min_bin_pct: f64, max_bin_pct: f64) -> Self {
+        Self::new(max_bins, min_bin_pct, max_bin_pct)
     }
 
     pub fn fit(
@@ -152,14 +153,15 @@ impl NumericalBinning {
 pub struct CategoricalBinning {
     pub max_bins: usize,
     pub min_bin_pct: f64,
+    pub max_bin_pct: f64,
     pub _bins: Option<Vec<CatBin>>,
 }
 
 #[pymethods]
 impl CategoricalBinning {
     #[new]
-    pub fn pynew(max_bins: usize, min_bin_pct: f64) -> Self {
-        Self::new(max_bins, min_bin_pct)
+    pub fn pynew(max_bins: usize, min_bin_pct: f64, max_bin_pct: f64) -> Self {
+        Self::new(max_bins, min_bin_pct, max_bin_pct)
     }
 
     pub fn fit(

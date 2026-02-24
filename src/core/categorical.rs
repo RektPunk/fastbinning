@@ -16,10 +16,11 @@ pub struct CatBin {
 }
 
 impl CategoricalBinning {
-    pub fn new(max_bins: usize, min_bin_pct: f64) -> Self {
+    pub fn new(max_bins: usize, min_bin_pct: f64, max_bin_pct: f64) -> Self {
         Self {
             max_bins,
             min_bin_pct,
+            max_bin_pct,
             _bins: None,
         }
     }
@@ -104,12 +105,16 @@ impl CategoricalBinning {
         let k_max = self.max_bins.min(n);
         let total_samples = stats.total_pos + stats.total_neg;
         let min_samples = (total_samples as f64 * self.min_bin_pct) as i32;
-
+        let max_samples = (total_samples as f64 * self.max_bin_pct) as i32;
         let mut dp = Array2::<f64>::from_elem((k_max + 1, n), f64::NEG_INFINITY);
         let mut best_split = Array2::<usize>::from_elem((k_max + 1, n), 0);
 
         for i in 0..n {
-            dp[[1, i]] = stats.calc_iv_range(0, i);
+            let (p, n_c) = stats.get_counts(0, i);
+            let total = p + n_c;
+            if total >= min_samples && total <= max_samples {
+                dp[[1, i]] = stats.calc_iv_range(0, i);
+            }
         }
 
         for k in 2..=k_max {
@@ -119,7 +124,7 @@ impl CategoricalBinning {
                         continue;
                     }
                     let (cur_p, cur_n) = stats.get_counts(j + 1, i);
-                    if cur_p + cur_n < min_samples {
+                    if cur_p + cur_n < min_samples || cur_p + cur_n > max_samples {
                         continue;
                     }
                     let current_iv = dp[[k - 1, j]] + stats.calc_iv_range(j + 1, i);
