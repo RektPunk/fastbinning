@@ -1,9 +1,30 @@
 import time
+from typing import List
 
 import numpy as np
 import pandas as pd
-from fastbinning import CategoricalBinning
+from fastbinning import CategoricalBinning, PyCatBin
 from sklearn.preprocessing import OrdinalEncoder
+
+
+def print_bins(bins: List[PyCatBin]):
+    print("-" * 110)
+    print(
+        f"{'ID':<3} | {'Indices':<10} | {'Count':<10} | {'Bin pct':<8} | "
+        f"{'Pos':<8} | {'Neg':<8} | {'WoE':<8} | {'IV':<8} | {'EventRate':<10} | {'Missing'}"
+    )
+    print("-" * 110)
+
+    total_iv = 0
+    for b in bins:
+        print(
+            f"{b.bin_id:<3} | {str(sorted(b.indices)):<10} | {b.count:<10} | {b.bin_pct:<8.4f} | "
+            f"{b.pos:<8} | {b.neg:<8} | {b.woe:<8.4f} | {b.iv:<8.4f} | {b.event_rate:<10.4f} | {b.is_missing}"
+        )
+        total_iv += b.iv
+    print("-" * 110)
+    print(f"Total IV: {total_iv:.4f}\n")
+
 
 if __name__ == "__main__":
     # -------------------------------------------------------------------------
@@ -47,20 +68,7 @@ if __name__ == "__main__":
     end_time = time.perf_counter()
 
     print(f"Execution Fitting Time: {(end_time - start_time) * 1000:.2f} ms")
-    print("-" * 100)
-    print(
-        f"{'ID':<3} | {'Indices':<25} | {'Pos':<10} | {'Neg':<10} | {'WoE':<8} | {'IV':<8} | {'Missing'}"
-    )
-    print("-" * 100)
-
-    total_iv = 0
-    for b in categorical_bins:
-        print(
-            f"{b.bin_id:<3} | {str(sorted(b.indices)):<25} | {b.pos:<10} | {b.neg:<10} | {b.woe:>8.4f} | {b.iv:>8.4f} | {b.is_missing}"
-        )
-        total_iv += b.iv
-    print("-" * 100)
-    print(f"Total IV: {total_iv:.4f}\n")
+    print_bins(categorical_bins)
 
     # -------------------------------------------------------------------------
     # TEST 2: Using Scikit-Learn OrdinalEncoder (Lexicographical Mapping)
@@ -85,20 +93,7 @@ if __name__ == "__main__":
     end_time = time.perf_counter()
 
     print(f"Execution Fitting Time: {(end_time - start_time) * 1000:.2f} ms")
-    print("-" * 100)
-    print(
-        f"{'ID':<3} | {'Indices':<25} | {'POS':<10} | {'NEG':<10} | {'WoE':<8} | {'IV':<8} | {'Missing'}"
-    )
-    print("-" * 100)
-
-    total_iv = 0
-    for b in categorical_bins:
-        print(
-            f"{b.bin_id:<3} | {str(sorted(b.indices)):<25} | {b.pos:<10} | {b.neg:<10} | {b.woe:>8.4f} | {b.iv:>8.4f} | {b.is_missing}"
-        )
-        total_iv += b.iv
-    print("-" * 100)
-    print(f"Total IV: {total_iv:.4f}")
+    print_bins(categorical_bins)
 
     # -------------------------------------------------------------------------
     # Transform
@@ -117,13 +112,4 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # Bins
     # -------------------------------------------------------------------------
-    print("-" * 100)
-    print(
-        f"{'ID':<3} | {'Indices':<25} | {'POS':<10} | {'NEG':<10} | {'WoE':<8} | {'IV':<8} | {'Missing'}"
-    )
-    print("-" * 100)
-    for b in categorical_binning.bins:
-        print(
-            f"{b.bin_id:<3} | {str(sorted(b.indices)):<25} | {b.pos:<10} | {b.neg:<10} | {b.woe:>8.4f} | {b.iv:>8.4f} | {b.is_missing}"
-        )
-    print("-" * 100)
+    print_bins(categorical_binning.bins)

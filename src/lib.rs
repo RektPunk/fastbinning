@@ -12,6 +12,10 @@ pub struct PyNumBin {
     #[pyo3(get)]
     pub range: (f64, f64),
     #[pyo3(get)]
+    pub count: i32,
+    #[pyo3(get)]
+    pub bin_pct: f64,
+    #[pyo3(get)]
     pub pos: i32,
     #[pyo3(get)]
     pub neg: i32,
@@ -19,6 +23,8 @@ pub struct PyNumBin {
     pub woe: f64,
     #[pyo3(get)]
     pub iv: f64,
+    #[pyo3(get)]
+    pub event_rate: f64,
     #[pyo3(get)]
     pub is_missing: bool,
 }
@@ -31,6 +37,10 @@ pub struct PyCatBin {
     #[pyo3(get)]
     pub indices: Vec<i32>,
     #[pyo3(get)]
+    pub count: i32,
+    #[pyo3(get)]
+    pub bin_pct: f64,
+    #[pyo3(get)]
     pub pos: i32,
     #[pyo3(get)]
     pub neg: i32,
@@ -38,6 +48,8 @@ pub struct PyCatBin {
     pub woe: f64,
     #[pyo3(get)]
     pub iv: f64,
+    #[pyo3(get)]
+    pub event_rate: f64,
     #[pyo3(get)]
     pub is_missing: bool,
 }
@@ -100,16 +112,36 @@ impl NumericalBinning {
                 "NotFittedError: Call fit() before accessing 'bins'",
             )
         })?;
+        let total_count: i32 = bins.iter().map(|b| b.pos + b.neg).sum();
+        let total_count_f = total_count as f64;
+
         let py_results = bins
             .iter()
-            .map(|b| PyNumBin {
-                bin_id: b.bin_id,
-                range: b.range,
-                pos: b.pos,
-                neg: b.neg,
-                woe: b.woe,
-                iv: b.iv,
-                is_missing: b.is_missing,
+            .map(|b| {
+                let count = b.pos + b.neg;
+                let event_rate = if count > 0 {
+                    b.pos as f64 / count as f64
+                } else {
+                    0.0
+                };
+                let bin_pct = if total_count > 0 {
+                    count as f64 / total_count_f
+                } else {
+                    0.0
+                };
+
+                PyNumBin {
+                    bin_id: b.bin_id,
+                    range: b.range,
+                    count,
+                    bin_pct,
+                    pos: b.pos,
+                    neg: b.neg,
+                    woe: b.woe,
+                    iv: b.iv,
+                    event_rate,
+                    is_missing: b.is_missing,
+                }
             })
             .collect();
         Ok(py_results)
@@ -175,16 +207,35 @@ impl CategoricalBinning {
             )
         })?;
 
+        let total_count: i32 = bins.iter().map(|b| b.pos + b.neg).sum();
+        let total_count_f = total_count as f64;
         let py_results = bins
             .iter()
-            .map(|b| PyCatBin {
-                bin_id: b.bin_id,
-                indices: b.indices.clone(),
-                pos: b.pos,
-                neg: b.neg,
-                woe: b.woe,
-                iv: b.iv,
-                is_missing: b.is_missing,
+            .map(|b| {
+                let count = b.pos + b.neg;
+                let event_rate = if count > 0 {
+                    b.pos as f64 / count as f64
+                } else {
+                    0.0
+                };
+                let bin_pct = if total_count > 0 {
+                    count as f64 / total_count_f
+                } else {
+                    0.0
+                };
+
+                PyCatBin {
+                    bin_id: b.bin_id,
+                    indices: b.indices.clone(),
+                    count,
+                    bin_pct,
+                    pos: b.pos,
+                    neg: b.neg,
+                    woe: b.woe,
+                    iv: b.iv,
+                    event_rate,
+                    is_missing: b.is_missing,
+                }
             })
             .collect();
         Ok(py_results)

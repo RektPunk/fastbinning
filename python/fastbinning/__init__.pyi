@@ -6,19 +6,25 @@ from numpy.typing import NDArray
 class PyNumBin:
     bin_id: int
     range: Tuple[float, float]
+    count: int
+    bin_pct: float
     pos: int
     neg: int
     woe: float
     iv: float
+    event_rate: float
     is_missing: bool
 
 class PyCatBin:
     bin_id: int
     indices: List[int]
+    count: int
+    bin_pct: float
     pos: int
     neg: int
     woe: float
     iv: float
+    event_rate: float
     is_missing: bool
 
 class NumericalBinning:

@@ -1,7 +1,31 @@
 import time
+from typing import List
 
 import numpy as np
-from fastbinning import NumericalBinning
+from fastbinning import NumericalBinning, PyNumBin
+
+
+def print_bins(bins: List[PyNumBin]):
+    print("-" * 120)
+    print(
+        f"{'ID':<3} | {'Range':<15} | {'Count':<10} | {'Bin pct':<8} | "
+        f"{'Pos':<8} | {'Neg':<8} | {'WoE':<8} | {'IV':<8} | {'EventRate':<10} | {'Missing'}"
+    )
+    print("-" * 120)
+
+    total_iv = 0
+    for b in bins:
+        range_str = (
+            f"({b.range[0]:>4.2f}, {b.range[1]:>4.2f}]" if not b.is_missing else "NaN"
+        )
+        print(
+            f"{b.bin_id:<3} | {range_str:<15} | {b.count:<10} | {b.bin_pct:<8.4f} | "
+            f"{b.pos:<8} | {b.neg:<8} | {b.woe:<8.4f} | {b.iv:<8.4f} | {b.event_rate:<10.4f} | {b.is_missing}"
+        )
+        total_iv += b.iv
+    print("-" * 120)
+    print(f"Total IV: {total_iv:.4f}\n")
+
 
 if __name__ == "__main__":
     # -------------------------------------------------------------------------
@@ -39,25 +63,7 @@ if __name__ == "__main__":
     # Result Visualization
     # -------------------------------------------------------------------------
     print(f"Execution Fitting Time: {(end_time - start_time) * 1000:.2f} ms")
-    print("-" * 100)
-    print(
-        f"{'ID':<3} | {'Range':<25} | {'Pos':<10} | {'Neg':<10} |{'WoE':<8} | {'IV':<8} | {'Missing'}"
-    )
-    print("-" * 100)
-
-    total_iv = 0
-    for b in bins:
-        range_str = (
-            f"({b.range[0]:>7.2f}, {b.range[1]:>7.2f}]" if not b.is_missing else "NaN"
-        )
-
-        print(
-            f"{b.bin_id:<3} | {range_str:<25} | {b.pos:<10} | {b.neg:<10} | {b.woe:>8.4f} | {b.iv:>8.4f} | {b.is_missing}"
-        )
-        total_iv += b.iv
-
-    print("-" * 100)
-    print(f"Total IV: {total_iv:.4f}")
+    print_bins(bins)
 
     # -------------------------------------------------------------------------
     # Transform
@@ -76,17 +82,4 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # Bins
     # -------------------------------------------------------------------------
-    print("-" * 100)
-    print(
-        f"{'ID':<3} | {'Range':<25} | {'Pos':<10} | {'Neg':<10} |{'WoE':<8} | {'IV':<8} | {'Missing'}"
-    )
-    print("-" * 100)
-    for b in numerical_binning.bins:
-        range_str = (
-            f"({b.range[0]:>7.2f}, {b.range[1]:>7.2f}]" if not b.is_missing else "NaN"
-        )
-
-        print(
-            f"{b.bin_id:<3} | {range_str:<25} | {b.pos:<10} | {b.neg:<10} | {b.woe:>8.4f} | {b.iv:>8.4f} | {b.is_missing}"
-        )
-    print("-" * 100)
+    print_bins(numerical_binning.bins)
