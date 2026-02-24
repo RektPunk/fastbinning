@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "fastbinning"
-version = "0.0.2"
+version = "0.0.3"
 description = "A high-performance binning library specifically designed for Credit Risk Modeling and Scorecard Development."
 authors = [
     {name = "RektPunk", email = "rektpunk@gmail.com"},
@@ -23,6 +23,7 @@ dev = [
     "maturin>=1.12.3",
     "optbinning>=0.20.1",
     "pandas>=1.1.5",
+    "pre-commit>=3.5.0",
     "scikit-learn>=1.0.2",
 ]
 

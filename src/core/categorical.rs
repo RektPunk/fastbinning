@@ -1,13 +1,13 @@
+use crate::CategoricalBinning;
 use crate::core::precategorical::PreCatBinStats;
 use crate::core::woeiv::calc_woe_iv;
 use ndarray::Array2;
-use pyo3::prelude::*;
 use rayon::prelude::*;
 use std::collections::HashMap;
 
 pub struct CatBin {
     pub bin_id: usize,
-    pub categories: Vec<String>,
+    pub indices: Vec<i32>,
     pub pos: i32,
     pub neg: i32,
     pub woe: f64,
@@ -15,28 +15,22 @@ pub struct CatBin {
     pub is_missing: bool,
 }
 
-#[pyclass]
-pub struct CategoricalBinning {
-    pub max_bins: usize,
-    pub min_bin_pct: f64,
-}
-
 impl CategoricalBinning {
     pub fn new(max_bins: usize, min_bin_pct: f64) -> Self {
         Self {
             max_bins,
             min_bin_pct,
+            _bins: None,
         }
     }
 
-    pub fn execute_fit(&self, x: &[i32], y: &[i32], category_names: Vec<String>) -> Vec<CatBin> {
-        let stats = self.prebinning(x, y, category_names);
-
+    pub fn execute_fit(&self, x: &[i32], y: &[i32]) -> Vec<CatBin> {
+        let stats = self.prebinning(x, y);
         let split_indices = self.split(&stats);
         self.reconstruct_bins(&stats, split_indices)
     }
 
-    fn prebinning(&self, x: &[i32], y: &[i32], category_names: Vec<String>) -> PreCatBinStats {
+    fn prebinning(&self, x: &[i32], y: &[i32]) -> PreCatBinStats {
         let (final_map, m_pos, m_neg) = x
             .par_iter()
             .zip(y.par_iter())
@@ -73,15 +67,9 @@ impl CategoricalBinning {
                 },
             );
 
-        let mut map_stats: Vec<(String, i32, i32)> = final_map
+        let mut map_stats: Vec<(i32, i32, i32)> = final_map
             .into_iter()
-            .map(|(id, (p, n))| {
-                let name = category_names
-                    .get(id as usize)
-                    .map(|s| s.clone())
-                    .unwrap_or_else(|| id.to_string());
-                (name, p, n)
-            })
+            .map(|(id, (p, n))| (id, p, n))
             .collect();
 
         map_stats.sort_by(|a, b| {
@@ -100,19 +88,19 @@ impl CategoricalBinning {
 
         let mut pos_counts = Vec::with_capacity(map_stats.len());
         let mut neg_counts = Vec::with_capacity(map_stats.len());
-        let mut final_names = Vec::with_capacity(map_stats.len());
+        let mut final_indices = Vec::with_capacity(map_stats.len());
 
-        for (name, p, n) in map_stats {
-            final_names.push(name);
+        for (id, p, n) in map_stats {
+            final_indices.push(id);
             pos_counts.push(p);
             neg_counts.push(n);
         }
 
-        PreCatBinStats::new(&pos_counts, &neg_counts, final_names, m_pos, m_neg)
+        PreCatBinStats::new(&pos_counts, &neg_counts, final_indices, m_pos, m_neg)
     }
 
     fn split(&self, stats: &PreCatBinStats) -> Vec<usize> {
-        let n = stats.names.len();
+        let n = stats.indices.len();
         let k_max = self.max_bins.min(n);
         let total_samples = stats.total_pos + stats.total_neg;
         let min_samples = (total_samples as f64 * self.min_bin_pct) as i32;
@@ -166,21 +154,22 @@ impl CategoricalBinning {
         let grand_total_neg = stats.total_neg + stats.missing_neg;
 
         let mut bins = Vec::new();
-        let n = stats.names.len();
+        let n = stats.indices.len();
         let mut start_idx = 0;
         let mut all_splits = splits.clone();
         all_splits.push(n - 1);
 
         for (b_id, &end_idx) in all_splits.iter().enumerate() {
             let (pos, neg) = stats.get_counts(start_idx, end_idx);
-            let categories = (start_idx..=end_idx)
-                .map(|i| stats.names[i].clone())
+
+            let indices = (start_idx..=end_idx)
+                .map(|i| stats.indices[i]) // 정수 ID 추출
                 .collect();
 
             let (woe, iv) = calc_woe_iv(pos, neg, grand_total_pos, grand_total_neg);
             bins.push(CatBin {
                 bin_id: b_id,
-                categories,
+                indices,
                 pos,
                 neg,
                 woe,
@@ -199,7 +188,7 @@ impl CategoricalBinning {
             );
             bins.push(CatBin {
                 bin_id: bins.len(),
-                categories: vec!["Missing".to_string()],
+                indices: vec![-1],
                 pos: stats.missing_pos,
                 neg: stats.missing_neg,
                 woe,
@@ -208,5 +197,31 @@ impl CategoricalBinning {
             });
         }
         bins
+    }
+
+    pub fn execute_transform(&self, x_view: &[i32], bins: &Vec<CatBin>) -> Vec<f64> {
+        let mut woe_lookup: HashMap<i32, f64> = HashMap::with_capacity(bins.len() * 2);
+        let mut missing_woe = 0.0;
+
+        for bin in bins {
+            if bin.is_missing {
+                missing_woe = bin.woe;
+            } else {
+                for &id in &bin.indices {
+                    woe_lookup.insert(id, bin.woe);
+                }
+            }
+        }
+
+        x_view
+            .iter()
+            .map(|&val| {
+                if val == -1 {
+                    missing_woe
+                } else {
+                    *woe_lookup.get(&val).unwrap_or(&missing_woe)
+                }
+            })
+            .collect()
     }
 }

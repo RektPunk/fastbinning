@@ -58,3 +58,11 @@ if __name__ == "__main__":
 
     print("-" * 100)
     print(f"Total IV: {total_iv:.4f}")
+
+    # -------------------------------------------------------------------------
+    # Transform
+    # -------------------------------------------------------------------------
+    start_time = time.perf_counter()
+    transformed = numerical_binning.transform(x_num)
+    end_time = time.perf_counter()
+    print(f"Execution transform Time: {(end_time - start_time) * 1000:.2f} ms")

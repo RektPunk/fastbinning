@@ -3,7 +3,7 @@ use crate::core::woeiv::calc_woe_iv;
 pub struct PreCatBinStats {
     pub cum_pos: Vec<i32>,
     pub cum_neg: Vec<i32>,
-    pub names: Vec<String>,
+    pub indices: Vec<i32>,
     pub total_pos: i32,
     pub total_neg: i32,
     pub missing_pos: i32,
@@ -14,7 +14,7 @@ impl PreCatBinStats {
     pub fn new(
         pos: &[i32],
         neg: &[i32],
-        names: Vec<String>,
+        indices: Vec<i32>,
         missing_pos: i32,
         missing_neg: i32,
     ) -> Self {
@@ -32,7 +32,7 @@ impl PreCatBinStats {
         Self {
             cum_pos,
             cum_neg,
-            names,
+            indices,
             total_pos: p_acc,
             total_neg: n_acc,
             missing_pos,

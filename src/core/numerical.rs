@@ -1,7 +1,7 @@
+use crate::NumericalBinning;
 use crate::core::prenumerical::PreNumBinStats;
 use crate::core::woeiv::calc_woe_iv;
 use ndarray::{Array2, ArrayView1};
-use pyo3::prelude::*;
 use rayon::prelude::*;
 
 #[derive(PartialEq, Clone, Copy)]
@@ -20,17 +20,12 @@ pub struct NumBin {
     pub is_missing: bool,
 }
 
-#[pyclass]
-pub struct NumericalBinning {
-    pub max_bins: usize,
-    pub min_bin_pct: f64,
-}
-
 impl NumericalBinning {
     pub fn new(max_bins: usize, min_bin_pct: f64) -> Self {
         Self {
             max_bins,
             min_bin_pct,
+            _bins: None,
         }
     }
 
@@ -213,5 +208,43 @@ impl NumericalBinning {
             });
         }
         bins
+    }
+
+    pub fn execute_transform(&self, x: ArrayView1<f64>, bins: &Vec<NumBin>) -> Vec<f64> {
+        let mut output = Vec::with_capacity(x.len());
+        let missing_woe = bins
+            .iter()
+            .find(|b| b.is_missing)
+            .map(|b| b.woe)
+            .unwrap_or(0.0);
+        let thresholds: Vec<f64> = bins
+            .iter()
+            .filter(|b| !b.is_missing)
+            .map(|b| b.range.1)
+            .collect();
+        let woe_map: Vec<f64> = bins
+            .iter()
+            .filter(|b| !b.is_missing)
+            .map(|b| b.woe)
+            .collect();
+
+        for &val in x.iter() {
+            if val.is_nan() {
+                output.push(missing_woe);
+            } else {
+                let idx = thresholds
+                    .binary_search_by(|probe| {
+                        if probe < &val {
+                            std::cmp::Ordering::Less
+                        } else {
+                            std::cmp::Ordering::Greater
+                        }
+                    })
+                    .unwrap_err();
+
+                output.push(woe_map[idx]);
+            }
+        }
+        output
     }
 }
