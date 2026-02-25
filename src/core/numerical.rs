@@ -163,14 +163,14 @@ impl NumericalBinning {
             }
         }
         let mut final_k = 1;
-        let mut max_iv = f64::NEG_INFINITY;
+        let mut max_score = f64::NEG_INFINITY;
+
         for k in 1..=k_max {
-            if dp_iv[[k, n - 1]] > max_iv {
-                max_iv = dp_iv[[k, n - 1]];
+            if dp_score[[k, n - 1]] > max_score {
+                max_score = dp_score[[k, n - 1]];
                 final_k = k;
             }
         }
-
         let mut splits = Vec::new();
         let mut curr_i = n - 1;
         let mut k_ptr = final_k;
@@ -182,7 +182,7 @@ impl NumericalBinning {
         }
         splits.sort();
 
-        (max_iv, splits)
+        (dp_iv[[final_k, n - 1]], splits)
     }
 
     fn reconstruct_bins(&self, stats: &PreNumBinStats, splits: Vec<usize>) -> Vec<NumBin> {

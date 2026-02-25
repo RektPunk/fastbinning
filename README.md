@@ -40,8 +40,8 @@ We sacrifice little of Information Value to achieve nearly two orders of magnitu
 | Sample Size | Metric             | fastbinning  | optbinning  | comparison          |
 |-------------|--------------------|--------------|-------------|---------------------|
 | 1,000,000   | Execution Time     | **0.0265s**  | 1.1773s     | **44.38x** Faster   |
-|             | Information Value  | 2.3041       |  2.3190     | **99.36%** Fidelity |
+|             | Information Value  | 2.3131       | 2.3190s     | **99.74%** Fidelity |
 | 10,000,000  | Execution Time     | **0.2523s**  | 16.5100s    | **65.44x** Faster   |
-|             | Information Value  | 2.3016       | 2.3177      | **99.31%** Fidelity |
+|             | Information Value  | 2.3091       | 2.3177s     | **99.63%** Fidelity |
 
 Reproducibility: You can reproduce these results by running the [**script**](https://github.com/RektPunk/fastbinning/tree/main/examples/benchmark.py).
