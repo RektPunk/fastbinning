@@ -1,6 +1,6 @@
 use numpy::{IntoPyArray, PyArray1, PyReadonlyArray1};
+use pyo3::exceptions::{PyRuntimeError, PyValueError};
 use pyo3::prelude::*;
-
 mod core;
 use crate::core::categorical::CatBin;
 use crate::core::numerical::NumBin;
@@ -65,8 +65,19 @@ pub struct NumericalBinning {
 #[pymethods]
 impl NumericalBinning {
     #[new]
-    pub fn pynew(max_bins: usize, min_bin_pct: f64, max_bin_pct: f64) -> Self {
-        Self::new(max_bins, min_bin_pct, max_bin_pct)
+    pub fn pynew(max_bins: usize, min_bin_pct: f64, max_bin_pct: f64) -> PyResult<Self> {
+        if min_bin_pct >= max_bin_pct {
+            return Err(PyValueError::new_err(format!(
+                "Invalid constraints: min_bin_pct ({}) must be less than max_bin_pct ({})",
+                min_bin_pct, max_bin_pct
+            )));
+        }
+        if min_bin_pct < 0.0 || max_bin_pct > 1.0 {
+            return Err(PyValueError::new_err(
+                "Bin percentages must be in the range [0.0, 1.0]",
+            ));
+        }
+        Ok(Self::new(max_bins, min_bin_pct, max_bin_pct))
     }
 
     pub fn fit(
@@ -86,11 +97,9 @@ impl NumericalBinning {
         py: Python<'py>,
         x: PyReadonlyArray1<'py, f64>,
     ) -> PyResult<Bound<'py, PyArray1<f64>>> {
-        let _bins = self._bins.as_ref().ok_or_else(|| {
-            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
-                "NotFittedError: Call fit() before transform()",
-            )
-        })?;
+        let _bins = self._bins.as_ref().ok_or(PyRuntimeError::new_err(
+            "NotFittedError: Call fit() before transform()",
+        ))?;
         let x_view = x.as_array();
         let output: Vec<f64> = self.execute_transform(x_view, _bins);
         Ok(output.into_pyarray(py))
@@ -108,11 +117,9 @@ impl NumericalBinning {
 
     #[getter]
     pub fn bins(&self) -> PyResult<Vec<PyNumBin>> {
-        let bins = self._bins.as_ref().ok_or_else(|| {
-            PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
-                "NotFittedError: Call fit() before accessing 'bins'",
-            )
-        })?;
+        let bins = self._bins.as_ref().ok_or(PyRuntimeError::new_err(
+            "NotFittedError: Call fit() before 'bins'",
+        ))?;
         let total_count: i32 = bins.iter().map(|b| b.pos + b.neg).sum();
         let total_count_f = total_count as f64;
 
@@ -160,8 +167,19 @@ pub struct CategoricalBinning {
 #[pymethods]
 impl CategoricalBinning {
     #[new]
-    pub fn pynew(max_bins: usize, min_bin_pct: f64, max_bin_pct: f64) -> Self {
-        Self::new(max_bins, min_bin_pct, max_bin_pct)
+    pub fn pynew(max_bins: usize, min_bin_pct: f64, max_bin_pct: f64) -> PyResult<Self> {
+        if min_bin_pct >= max_bin_pct {
+            return Err(PyValueError::new_err(format!(
+                "Invalid constraints: min_bin_pct ({}) must be less than max_bin_pct ({})",
+                min_bin_pct, max_bin_pct
+            )));
+        }
+        if min_bin_pct < 0.0 || max_bin_pct > 1.0 {
+            return Err(PyValueError::new_err(
+                "Bin percentages must be in the range [0.0, 1.0]",
+            ));
+        }
+        Ok(Self::new(max_bins, min_bin_pct, max_bin_pct))
     }
 
     pub fn fit(

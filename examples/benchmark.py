@@ -20,7 +20,7 @@ def run_benchmark(n_samples: int, seed: int = 42):
     # max_bins: Final number of bins to produce
     # initial_bins_count: Pre-binning resolution for speed/accuracy trade-off
     # min_bin_pct: Minimum sample size required for each bin (10%)
-    fb = NumericalBinning(max_bins=10, min_bin_pct=0.05, max_bin_pct=0.1)
+    fb = NumericalBinning(max_bins=10, min_bin_pct=0.05, max_bin_pct=0.15)
     start = time.perf_counter()
     fb_results = fb.fit(x, y)
     fb_time = time.perf_counter() - start
@@ -61,7 +61,7 @@ def run_benchmark(n_samples: int, seed: int = 42):
     print("optbinning result:")
     print("-" * 100)
     opt_table = optb.binning_table.build()
-    print(opt_table[["Bin", "Event", "Non-event", "WoE", "IV"]])
+    print(opt_table)
     print("-" * 100)
 
     print("Benchmarks:")
