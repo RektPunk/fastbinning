@@ -39,7 +39,6 @@ impl CategoricalBinning {
                 || (HashMap::<i32, (i32, i32)>::new(), 0, 0),
                 |(mut map, mut mp, mut mn), (&val, &target)| {
                     if val == -1 {
-                        // pandas factorize NaN
                         if target == 1 {
                             mp += 1;
                         } else {
@@ -167,9 +166,7 @@ impl CategoricalBinning {
         for (b_id, &end_idx) in all_splits.iter().enumerate() {
             let (pos, neg) = stats.get_counts(start_idx, end_idx);
 
-            let indices = (start_idx..=end_idx)
-                .map(|i| stats.indices[i]) // 정수 ID 추출
-                .collect();
+            let indices = (start_idx..=end_idx).map(|i| stats.indices[i]).collect();
 
             let (woe, iv) = calc_woe_iv(pos, neg, grand_total_pos, grand_total_neg);
             bins.push(CatBin {
