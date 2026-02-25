@@ -94,58 +94,83 @@ impl NumericalBinning {
     fn split(&self, stats: &PreNumBinStats, trend: Trend) -> (f64, Vec<usize>) {
         let n = stats.edges.len();
         let k_max = self.max_bins.min(n);
-        let total_samples = stats.total_pos + stats.total_neg;
-        let min_samples = (total_samples as f64 * self.min_bin_pct) as i32;
-        let max_samples = (total_samples as f64 * self.max_bin_pct) as i32;
+        let total_samples = (stats.total_pos + stats.total_neg) as f64;
+        let min_samples = (total_samples * self.min_bin_pct) as i32;
+        let max_samples = (total_samples * self.max_bin_pct) as i32;
+        let target_pct = (self.min_bin_pct + self.max_bin_pct) / 2.0;
+        let range_width = (self.max_bin_pct - self.min_bin_pct) / 2.0;
 
-        let mut dp = Array2::<f64>::from_elem((k_max + 1, n), f64::NEG_INFINITY);
+        let mut dp_score = Array2::<f64>::from_elem((k_max + 1, n), f64::NEG_INFINITY);
+        let mut dp_iv = Array2::<f64>::from_elem((k_max + 1, n), 0.0);
         let mut last_woe = Array2::<f64>::from_elem((k_max + 1, n), 0.0);
         let mut best_split = Array2::<usize>::from_elem((k_max + 1, n), 0);
 
+        let lambda = 5.0;
         for i in 0..n {
             let (p, n_c) = stats.get_counts(0, i);
-            let total = p + n_c;
-            if total >= min_samples && total <= max_samples {
-                dp[[1, i]] = stats.calc_iv_range(0, i);
+            let current_count = p + n_c;
+
+            if current_count >= min_samples && current_count <= max_samples {
+                let current_pct = current_count as f64 / total_samples;
+                let ratio = ((current_pct - target_pct).abs() / range_width).min(0.999);
+                let penalty = lambda * (1.0 - ratio.powi(2)).ln();
+                let iv = stats.calc_iv_range(0, i);
+                dp_score[[1, i]] = iv + penalty;
+                dp_iv[[1, i]] = iv;
                 last_woe[[1, i]] = stats.calc_woe_single(p, n_c);
             }
         }
+
         for k in 2..=k_max {
+            let adaptive_lambda = lambda * ((k_max - k + 1) as f64 / k_max as f64);
+
             for i in (k - 1)..n {
                 for j in (k - 2)..i {
-                    if dp[[k - 1, j]] == f64::NEG_INFINITY {
+                    if dp_score[[k - 1, j]] == f64::NEG_INFINITY {
                         continue;
                     }
 
                     let (cur_p, cur_n) = stats.get_counts(j + 1, i);
-                    if cur_p + cur_n < min_samples || cur_p + cur_n > max_samples {
-                        continue;
-                    }
-                    let cur_woe = stats.calc_woe_single(cur_p, cur_n);
-                    let prev_woe = last_woe[[k - 1, j]];
+                    let cur_count = cur_p + cur_n;
 
-                    let is_monotonic = match trend {
-                        Trend::Increasing => cur_woe >= prev_woe - f64::EPSILON,
-                        Trend::Decreasing => cur_woe <= prev_woe + f64::EPSILON,
-                    };
+                    if cur_count >= min_samples && cur_count <= max_samples {
+                        let cur_woe = stats.calc_woe_single(cur_p, cur_n);
+                        let prev_woe = last_woe[[k - 1, j]];
 
-                    if is_monotonic {
-                        let current_iv = dp[[k - 1, j]] + stats.calc_iv_range(j + 1, i);
-                        if current_iv > dp[[k, i]] {
-                            dp[[k, i]] = current_iv;
-                            last_woe[[k, i]] = cur_woe;
-                            best_split[[k, i]] = j;
+                        let is_monotonic = match trend {
+                            Trend::Increasing => cur_woe >= prev_woe - f64::EPSILON,
+                            Trend::Decreasing => cur_woe <= prev_woe + f64::EPSILON,
+                        };
+
+                        if is_monotonic {
+                            let cur_pct = cur_count as f64 / total_samples;
+                            let ratio = ((cur_pct - target_pct).abs() / range_width).min(0.999);
+                            let penalty = -adaptive_lambda * (1.0 - ratio.powi(2)).ln();
+
+                            let iv = stats.calc_iv_range(j + 1, i);
+                            let cur_score = iv - penalty;
+                            let total_score = dp_score[[k - 1, j]] + cur_score;
+
+                            if total_score > dp_score[[k, i]] {
+                                dp_score[[k, i]] = total_score;
+                                dp_iv[[k, i]] = dp_iv[[k - 1, j]] + iv;
+                                best_split[[k, i]] = j;
+                                last_woe[[k, i]] = cur_woe;
+                            }
                         }
                     }
                 }
             }
         }
+        let mut final_k = 1;
+        let mut max_score = f64::NEG_INFINITY;
 
-        let mut final_k = k_max;
-        while final_k > 1 && dp[[final_k, n - 1]] == f64::NEG_INFINITY {
-            final_k -= 1;
+        for k in 1..=k_max {
+            if dp_score[[k, n - 1]] > max_score {
+                max_score = dp_score[[k, n - 1]];
+                final_k = k;
+            }
         }
-
         let mut splits = Vec::new();
         let mut curr_i = n - 1;
         let mut k_ptr = final_k;
@@ -156,7 +181,8 @@ impl NumericalBinning {
             k_ptr -= 1;
         }
         splits.sort();
-        (dp[[final_k, n - 1]], splits)
+
+        (dp_iv[[final_k, n - 1]], splits)
     }
 
     fn reconstruct_bins(&self, stats: &PreNumBinStats, splits: Vec<usize>) -> Vec<NumBin> {
